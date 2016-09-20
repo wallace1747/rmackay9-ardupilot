@@ -3,7 +3,7 @@
 #include "AP_Proximity.h"
 #include "AP_Proximity_Backend.h"
 
-#define PROXIMITY_SF40C_SECTORS_MAX           8                                 // maximum number of sectors
+#define PROXIMITY_SF40C_SECTORS_MAX           12                                // maximum number of sectors
 #define PROXIMITY_SF40C_SECTOR_WIDTH_DEG      (360/PROXIMITY_SF40C_SECTORS_MAX) // angular width of each sector
 #define PROXIMITY_SF40C_TIMEOUT_MS            200                               // requests timeout after 0.2 seconds
 
@@ -95,8 +95,11 @@ private:
     uint8_t _motor_direction = 99;      // motor direction as reported by lidar
     int16_t _forward_direction = 999;   // forward direction as reported by lidar
     uint8_t _num_sectors = PROXIMITY_SF40C_SECTORS_MAX;     // number of sectors we will search
-    uint16_t _sector_middle_deg[PROXIMITY_SF40C_SECTORS_MAX] = {0, 45, 90, 135, 180, 225, 270, 315};    // middle angle of each sector
-    uint8_t _sector_width_deg[PROXIMITY_SF40C_SECTORS_MAX] = {45, 45, 45, 45, 45, 45, 45, 45};          // width (in degrees) of each sector
+    //uint16_t _sector_middle_deg[PROXIMITY_SF40C_SECTORS_MAX] = {0, 45, 90, 135, 180, 225, 270, 315};    // middle angle of each sector
+    //uint8_t _sector_width_deg[PROXIMITY_SF40C_SECTORS_MAX] = {45, 45, 45, 45, 45, 45, 45, 45};          // width (in degrees) of each sector
+    // randy specific values to avoid legs
+    uint16_t _sector_middle_deg[PROXIMITY_SF40C_SECTORS_MAX] = {0,35,63,90,124,151,180,207,235,270,299,326};    // middle angle of each sector
+    uint8_t _sector_width_deg[PROXIMITY_SF40C_SECTORS_MAX] =   {45,26,8,45,23,11,45,10,24,45,13,21};            // width (in degrees) of each sector
     float _angle[PROXIMITY_SF40C_SECTORS_MAX];              // angle to closest object within each sector
     float _distance[PROXIMITY_SF40C_SECTORS_MAX];           // distance to closest object within each sector
     bool _distance_valid[PROXIMITY_SF40C_SECTORS_MAX];      // true if a valid distance received for each sector
