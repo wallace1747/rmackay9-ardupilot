@@ -85,13 +85,13 @@ public:
 private:
     // parameters
     AP_Int8 _type;
+    AP_Float origin_lat;
+    AP_Float origin_lon;
+    AP_Float origin_alt;
 
     // external references
     AP_Beacon_Backend *_driver;
     AP_SerialManager &serial_manager;
-
-    // system's origin in lat, lon, alt
-    Location origin;
 
     // last known position
     Vector3f veh_pos_ned;

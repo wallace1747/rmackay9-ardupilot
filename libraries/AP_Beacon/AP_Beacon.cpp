@@ -30,6 +30,33 @@ const AP_Param::GroupInfo AP_Beacon::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_TYPE",    0, AP_Beacon, _type, 0),
 
+    // @Param: _LATITUDE
+    // @DisplayName: Beacon origin's latitude
+    // @Description: Beacon origin's latitude
+    // @Units: degrees
+    // @Increment: 0.000001
+    // @Range: -90 90
+    // @User: Advanced
+    AP_GROUPINFO("_LATITUDE", 1, AP_Beacon, origin_lat, 0),
+
+    // @Param: _LONGITUDE
+    // @DisplayName: Beacon origin's longitude
+    // @Description: Beacon origin's longitude
+    // @Units: degrees
+    // @Increment: 0.000001
+    // @Range: -180 180
+    // @User: Advanced
+    AP_GROUPINFO("_LONGITUDE", 2, AP_Beacon, origin_lon, 0),
+
+    // @Param: _ALT
+    // @DisplayName: Beacon origin's altitude above sealevel in meters
+    // @Description: Beacon origin's altitude above sealevel in meters
+    // @Units: meters
+    // @Increment: 1
+    // @Range: 0 10000
+    // @User: Advanced
+    AP_GROUPINFO("_ALT", 3, AP_Beacon, origin_alt, 0),
+
     AP_GROUPEND
 };
 
@@ -70,12 +97,16 @@ bool AP_Beacon::get_origin(Location &origin_loc) const
     }
 
     // check for unitialised origin
-    if (origin.lat == 0 && origin.lng == 0 && origin.alt == 0) {
+    if (is_zero(origin_lat) && is_zero(origin_lon) && is_zero(origin_alt)) {
         return false;
     }
 
     // return origin
-    origin_loc = origin;
+    origin_loc.lat = origin_lat * 10e7;
+    origin_loc.lng = origin_lon * 10e7;
+    origin_loc.alt = origin_alt * 100;
+    origin_loc.options = 0; // all flags to zero meaning alt-above-sea-level
+
     return true;
 }
 
