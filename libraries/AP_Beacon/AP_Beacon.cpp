@@ -146,3 +146,13 @@ bool AP_Beacon::get_beacon_data(uint8_t beacon_instance, struct BeaconState& sta
     state = beacon_state[beacon_instance];
     return true;
 }
+
+// return beacon position
+Vector3f AP_Beacon::beacon_position(uint8_t beacon_instance) const
+{
+    if (_driver == NULL || _type == AP_BeaconType_None || beacon_instance >= num_beacons) {
+        Vector3f temp = {};
+        return temp;
+    }
+    return beacon_state[beacon_instance].position;
+}

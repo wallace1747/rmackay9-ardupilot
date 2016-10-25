@@ -77,6 +77,9 @@ public:
     // return distance to beacon in meters
     float beacon_distance(uint8_t beacon_instance) const;
 
+    // return NED position of beacon relative to the beacon systems origin
+    Vector3f beacon_position(uint8_t beacon_instance) const;
+
     // return last update time from beacon
     uint32_t beacon_last_update_ms(uint8_t beacon_instance) const;
 
