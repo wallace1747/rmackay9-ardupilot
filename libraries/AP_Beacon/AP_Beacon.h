@@ -74,7 +74,7 @@ public:
     // return beacon health
     bool beacon_healthy(uint8_t beacon_instance) const;
 
-    // return distancde to beacon in meters
+    // return distance to beacon in meters
     float beacon_distance(uint8_t beacon_instance) const;
 
     // return last update time from beacon

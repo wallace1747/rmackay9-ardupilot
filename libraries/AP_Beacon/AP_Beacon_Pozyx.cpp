@@ -25,9 +25,9 @@ AP_Beacon_Pozyx::AP_Beacon_Pozyx(AP_Beacon &frontend, AP_SerialManager &serial_m
     AP_Beacon_Backend(frontend, serial_manager),
     linebuf_len(0)
 {
-    uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Lidar, 0);
+    uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Beacon, 0);
     if (uart != nullptr) {
-        uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Lidar, 0));
+        uart->begin(serial_manager.find_baudrate(AP_SerialManager::SerialProtocol_Beacon, 0));
     }
 }
 
@@ -38,27 +38,105 @@ void AP_Beacon_Pozyx::update(void)
         return;
     }
 
-    // read any available lines from the lidar
-    float sum = 0;
-    uint16_t count = 0;
+    // read any available characters
     int16_t nbytes = uart->available();
     while (nbytes-- > 0) {
         char c = uart->read();
-        if (c == '\r') {
-            linebuf[linebuf_len] = 0;
-            sum += (float)atof(linebuf);
-            count++;
-            linebuf_len = 0;
-        } else if (isdigit(c) || c == '.') {
-            linebuf[linebuf_len++] = c;
-            if (linebuf_len == sizeof(linebuf)) {
-                // too long, discard the line
-                linebuf_len = 0;
-            }
+
+        switch (parse_state) {
+
+            default:
+            case ParseState_WaitingForHeader:
+                if (c == AP_BEACON_POZYX_HEADER) {
+                    parse_state = ParseState_WaitingForMsgId;
+                    linebuf_len = 0;
+                }
+                break;
+
+            case ParseState_WaitingForMsgId:
+                parse_msg_id = c;
+                if (parse_msg_id == AP_BEACON_POZYX_MSGID_BEACON_CONFIG ||
+                    parse_msg_id == AP_BEACON_POZYX_MSGID_BEACON_DIST ||
+                    parse_msg_id == AP_BEACON_POZYX_MSGID_POSITION) {
+                    parse_state = ParseState_WaitingForLen;
+                } else {
+                    // invalid message id
+                    parse_state = ParseState_WaitingForHeader;
+                }
+                break;
+
+            case ParseState_WaitingForLen:
+                parse_msg_len = c;
+                if (parse_msg_len > AP_BEACON_POZYX_MSG_LEN_MAX) {
+                    // invalid message length
+                    parse_state = ParseState_WaitingForHeader;
+                } else {
+                    parse_state = ParseState_WaitingForContents;
+                }
+                break;
+
+            case ParseState_WaitingForContents:
+                // add to buffer
+                linebuf[linebuf_len++] = c;
+                if ((linebuf_len == parse_msg_len) || (linebuf_len == sizeof(linebuf))) {
+                    // process buffer
+                    parse_buffer();
+                    // reset state for next message
+                    parse_state = ParseState_WaitingForHeader;
+                }
+                break;
         }
     }
-
-    // we need to write a byte to prompt another reading
-    uart->write('d');
 }
 
+// parse buffer
+void AP_Beacon_Pozyx::parse_buffer()
+{
+    // check crc
+    uint8_t checksum = 0;
+    checksum ^= parse_msg_id;
+    checksum ^= parse_msg_len;
+    for (uint8_t i=0; i<linebuf_len-1; i++) {
+        checksum ^= linebuf[i];
+    }
+    // return if failed checksum check
+    if (checksum != linebuf[linebuf_len-1]) {
+        return;
+    }
+
+    switch (parse_msg_id) {
+
+        case AP_BEACON_POZYX_MSGID_BEACON_CONFIG:
+            {
+                uint8_t beacon_id = linebuf[0];
+                //uint8_t beacon_count = linebuf[1];
+                int32_t beacon_x = (uint32_t)linebuf[5] << 24 | (uint32_t)linebuf[4] << 16 | (uint32_t)linebuf[3] << 8 | (uint32_t)linebuf[2];
+                int32_t beacon_y = (uint32_t)linebuf[9] << 24 | (uint32_t)linebuf[8] << 16 | (uint32_t)linebuf[7] << 8 | (uint32_t)linebuf[6];
+                int32_t beacon_z = (uint32_t)linebuf[13] << 24 | (uint32_t)linebuf[12] << 16 | (uint32_t)linebuf[11] << 8 | (uint32_t)linebuf[10];
+                set_beacon_position(beacon_id, Vector3f(beacon_x / 1000.0f, beacon_y / 1000.0f, beacon_z / 1000.0f));
+            }
+            break;
+
+        case AP_BEACON_POZYX_MSGID_BEACON_DIST:
+            {
+                uint8_t beacon_id = linebuf[0];
+                uint32_t beacon_distance = (uint32_t)linebuf[4] << 24 | (uint32_t)linebuf[3] << 16 | (uint32_t)linebuf[2] << 8 | (uint32_t)linebuf[1];
+                set_beacon_distance(beacon_id, beacon_distance / 1000.0f);
+            }
+            break;
+
+        case AP_BEACON_POZYX_MSGID_POSITION:
+            {
+                int32_t vehicle_x = (uint32_t)linebuf[3] << 24 | (uint32_t)linebuf[2] << 16 | (uint32_t)linebuf[1] << 8 | (uint32_t)linebuf[0];
+                int32_t vehicle_y = (uint32_t)linebuf[7] << 24 | (uint32_t)linebuf[6] << 16 | (uint32_t)linebuf[5] << 8 | (uint32_t)linebuf[4];
+                int32_t vehicle_z = (uint32_t)linebuf[11] << 24 | (uint32_t)linebuf[10] << 16 | (uint32_t)linebuf[9] << 8 | (uint32_t)linebuf[8];
+                int16_t position_error = (uint32_t)linebuf[13] << 8 | (uint32_t)linebuf[12];
+                set_vehicle_position_ned(Vector3f(vehicle_x / 1000.0f, vehicle_y / 1000.0f, vehicle_z / 1000.0f), position_error);
+            }
+            break;
+
+        default:
+            // unrecognised message id
+            break;
+    }
+}

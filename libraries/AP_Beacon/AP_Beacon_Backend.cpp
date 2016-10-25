@@ -36,10 +36,35 @@ void AP_Beacon_Backend::set_vehicle_position_ned(const Vector3f& pos, float accu
 // set individual beacon distance in meters
 void AP_Beacon_Backend::set_beacon_distance(uint8_t beacon_instance, float distance)
 {
-    if (beacon_instance < _frontend.num_beacons) {
-        _frontend.beacon_state[beacon_instance].distance_update_ms = AP_HAL::millis();
-        _frontend.beacon_state[beacon_instance].distance = distance;
-        _frontend.beacon_state[beacon_instance].healthy = true;
+    // sanity check instance
+    if (beacon_instance > AP_BEACON_MAX_BEACONS) {
+        return;
     }
+
+    // setup new beacon
+    if (beacon_instance > _frontend.num_beacons) {
+        _frontend.num_beacons = beacon_instance;
+    }
+
+    _frontend.beacon_state[beacon_instance].distance_update_ms = AP_HAL::millis();
+    _frontend.beacon_state[beacon_instance].distance = distance;
+    _frontend.beacon_state[beacon_instance].healthy = true;
 }
 
+// configure beacon's position in meters from origin
+void AP_Beacon_Backend::set_beacon_position(uint8_t beacon_instance, const Vector3f& pos)
+{
+    // sanity check instance
+    if (beacon_instance > AP_BEACON_MAX_BEACONS) {
+        return;
+    }
+
+    // setup new beacon
+    if (beacon_instance > _frontend.num_beacons) {
+        _frontend.num_beacons = beacon_instance;
+    }
+
+
+    // set position
+    _frontend.beacon_state[beacon_instance].position = pos;
+}

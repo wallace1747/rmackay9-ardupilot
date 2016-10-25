@@ -35,6 +35,9 @@ public:
     // set individual beacon distance in meters
     void set_beacon_distance(uint8_t beacon_instance, float distance);
 
+    // configure beacon's position in meters from origin
+    void set_beacon_position(uint8_t beacon_instance, const Vector3f& pos);
+
 protected:
 
     // references
