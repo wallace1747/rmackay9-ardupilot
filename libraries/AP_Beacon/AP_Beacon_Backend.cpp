@@ -15,6 +15,8 @@
  */
 
 #include "AP_Beacon_Backend.h"
+// debug
+#include <stdio.h>
 
 /*
   base class constructor. 
@@ -31,6 +33,9 @@ void AP_Beacon_Backend::set_vehicle_position_ned(const Vector3f& pos, float accu
     _frontend.veh_pos_update_ms = AP_HAL::millis();
     _frontend.veh_pos_ned = pos;
     _frontend.veh_pos_accuracy = accuracy_estimate;
+
+    // debug
+    ::printf("vehicle x:%4.2f y:%4.2f z:%4.2f error:%4.2f\n", (double)pos.x, (double)pos.y, (double)pos.z, (double)accuracy_estimate);
 }
 
 // set individual beacon distance in meters
@@ -49,6 +54,8 @@ void AP_Beacon_Backend::set_beacon_distance(uint8_t beacon_instance, float dista
     _frontend.beacon_state[beacon_instance].distance_update_ms = AP_HAL::millis();
     _frontend.beacon_state[beacon_instance].distance = distance;
     _frontend.beacon_state[beacon_instance].healthy = true;
+
+    ::printf("beacon %d dist:%4.2f\n", (int)beacon_instance, (double)distance);
 }
 
 // configure beacon's position in meters from origin
@@ -64,6 +71,7 @@ void AP_Beacon_Backend::set_beacon_position(uint8_t beacon_instance, const Vecto
         _frontend.num_beacons = beacon_instance;
     }
 
+    ::printf("beacon %d x:%4.2f y:%4.2f z:%4.2f\n", (int)beacon_instance, (double)pos.x, (double)pos.y, (double)pos.z);
 
     // set position
     _frontend.beacon_state[beacon_instance].position = pos;
