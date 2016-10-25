@@ -118,6 +118,7 @@ void NavEKF2_core::InitialiseVariables()
     lastBaroReceived_ms = imuSampleTime_ms;
     lastVelPassTime_ms = imuSampleTime_ms;
     lastPosPassTime_ms = imuSampleTime_ms;
+    lastRngBcnPassTime_ms = imuSampleTime_ms;
     lastHgtPassTime_ms = imuSampleTime_ms;
     lastTasPassTime_ms = imuSampleTime_ms;
     lastSynthYawTime_ms = imuSampleTime_ms;

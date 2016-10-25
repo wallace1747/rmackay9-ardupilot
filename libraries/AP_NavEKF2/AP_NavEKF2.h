@@ -302,7 +302,7 @@ private:
     AP_Float _gpsHorizVelNoise;     // GPS horizontal velocity measurement noise : m/s
     AP_Float _gpsVertVelNoise;      // GPS vertical velocity measurement noise : m/s
     AP_Float _gpsHorizPosNoise;     // GPS horizontal position measurement noise m
-    AP_Float _baroAltNoise;         // Baro height measurement noise : m^2
+    AP_Float _baroAltNoise;         // Baro height measurement noise : m
     AP_Float _magNoise;             // magnetometer measurement noise : gauss
     AP_Float _easNoise;             // equivalent airspeed measurement noise : m/s
     AP_Float _windVelProcessNoise;  // wind velocity state process noise : m/s^2
@@ -341,6 +341,9 @@ private:
     AP_Int8 _tauVelPosOutput;       // Time constant of output complementary filter : csec (centi-seconds)
     AP_Int8 _useRngSwHgt;           // Maximum valid range of the range finder in metres
     AP_Float _terrGradMax;          // Maximum terrain gradient below the vehicle
+    AP_Float _rngBcnNoise;          // Range beacon measurement noise (m)
+    AP_Int16 _rngBcnInnovGate;      // Percentage number of standard deviations applied to range beacon innovation consistency check
+    AP_Int8  _rngBcnDelay_ms;       // effective average delay of range beacon measurements rel to IMU (msec)
 
     // Tuning parameters
     const float gpsNEVelVarAccScale;    // Scale factor applied to NE velocity measurement variance due to manoeuvre acceleration

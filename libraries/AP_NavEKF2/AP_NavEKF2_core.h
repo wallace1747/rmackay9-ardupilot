@@ -393,6 +393,14 @@ private:
         uint8_t     sensor_idx;  // 2
     };
 
+    struct rng_bcn_elements {
+        float       rng[10];        // range measurement to each beacon (m)
+        Vector3f    posNED[10];     // NED position of each beacon (m)
+        float       rngErr[10];     // range measurement error 1-std (m)
+        uint32_t    individual_time_ms[10]; // time stamp for the individual measurements (msec)
+        uint32_t    time_ms;        // average of the indivudual time stamps (msec)
+    };
+
     struct tas_elements {
         float       tas;         // 0
         uint32_t    time_ms;     // 1
@@ -429,6 +437,9 @@ private:
 
     // fuse selected position, velocity and height measurements
     void FuseVelPosNED();
+
+    // fuse range beacon measurments for the specified beacon index
+    void FuseRngBcn(uint8_t beaconIndex);
 
     // fuse magnetometer measurements
     void FuseMagnetometer();
@@ -521,8 +532,14 @@ private:
     // check for new airspeed data and update stored measurements if available
     void readAirSpdData();
 
+    // check for new range beacon data and update stored measurements if available
+    void readRngBcnData();
+
     // determine when to perform fusion of GPS position and  velocity measurements
     void SelectVelPosFusion();
+
+    // determine when to perform fusion of range measurements take realtive to a beacon at a known NED position
+    void SelectRngBcnFusion();
 
     // determine when to perform fusion of magnetometer measurements
     void SelectMagFusion();
@@ -690,7 +707,7 @@ private:
     obs_ring_buffer_t<mag_elements> storedMag;      // Magnetometer data buffer
     obs_ring_buffer_t<baro_elements> storedBaro;    // Baro data buffer
     obs_ring_buffer_t<tas_elements> storedTAS;      // TAS data buffer
-    obs_ring_buffer_t<range_elements> storedRange;
+    obs_ring_buffer_t<range_elements> storedRange;  // Range finder data buffer
     imu_ring_buffer_t<output_elements> storedOutput;// output state buffer
     Matrix3f prevTnb;               // previous nav to body transformation used for INS earth rotation compensation
     ftype accNavMag;                // magnitude of navigation accel - used to adjust GPS obs variance (m/s^2)
@@ -922,6 +939,20 @@ private:
     bool terrainHgtStable;                  // true when the terrain height is stable enough to be used as a height reference
     uint32_t terrainHgtStableSet_ms;        // system time at which terrainHgtStable was set
 
+    // Range Beacon Sensor Fusion
+    obs_ring_buffer_t<rng_bcn_elements> storedRangeBeacon; // Beacon range buffer
+    rng_bcn_elements rngBcnDataNew;     // Range beacon data at the current time horizon
+    rng_bcn_elements rngBcnDataDelayed; // Range beacon data at the fusion time horizon
+    uint8_t rngBcnStoreIndex;           // Range beacon data storage index
+    uint32_t lastRngBcnPassTime_ms;     // time stamp when the range beacon measurement last passed innvovation consistency checks (msec)
+    float rngBcnTestRatio;              // Innovation test ratio for range beacon measurements
+    bool rngBcnHealth;                  // boolean true if range beacon measurements have passed innovation consistency check
+    bool rngBcnTimeout;                 // boolean true if range beacon measurements have faled innovation consistency checks for too long
+    float varInnovRngBcn;               // range beacon observation innovation variance (m^2)
+    float innovRngBcn;                  // range beacon observation innovation (m)
+    uint32_t lastRngBcnMeasTime_ms;     // last time we received a range beacon measurement (msec)
+    bool rngBcnDataToFuse;              // true when there is new range beacon data to fuse
+
     // height source selection logic
     uint8_t activeHgtSource;    // integer defining active height source
 
@@ -964,6 +995,7 @@ private:
         bool bad_decl:1;
         bool bad_xflow:1;
         bool bad_yflow:1;
+        bool bad_rngbcn:1;
     } faultStatus;
 
     // flags indicating which GPS quality checks are failing
@@ -1000,7 +1032,6 @@ private:
         ftype R_MAG;
         Vector9 SH_MAG;
     } mag_state;
-
 
     // string representing last reason for prearm failure
     char prearm_fail_string[40];

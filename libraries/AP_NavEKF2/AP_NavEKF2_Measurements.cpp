@@ -648,4 +648,64 @@ void NavEKF2_core::readAirSpdData()
     tasDataToFuse = storedTAS.recall(tasDataDelayed,imuDataDelayed.time_ms);
 }
 
+/********************************************************
+*              Range Beacon Measurements                *
+********************************************************/
+
+// check for new airspeed data and update stored measurements if available
+void NavEKF2_core::readRngBcnData()
+{
+    // get the location of the beacon data
+    const AP_Beacon *beacon = _ahrs->get_beacon();
+    // get the number of beacons in use
+    uint8_t N_beacons = beacon->count();
+    // search through the beacons for new data
+    bool newDataToPush = false;
+    for (uint8_t index=0; index < MAX(N_beacons,10); index++) {
+        // check if the beacon should be used
+        if (beacon &&
+                beacon->beacon_healthy(index) &&
+                beacon->beacon_last_update_ms(index) != timeTasReceived_ms) {
+
+            // set the timestamp, correcting for measurement delay and average intersampling delay due to the filter update rate
+            rngBcnDataNew.individual_time_ms[index] = beacon->beacon_last_update_ms(index) - frontend->_rngBcnDelay_ms - localFilterTimeStep_ms/2;
+
+            // set the range noise
+            // TODO the range library should provide the noise/accuracy estimate for each beacon
+            rngBcnDataNew.rngErr[index] = frontend->_rngBcnNoise;
+
+            // set the range measurement
+            rngBcnDataNew.rng[index] = beacon->beacon_distance(index);
+
+            // set the beacon position
+            rngBcnDataNew.posNED[index] = beacon->beacon_position(index);
+
+            // indicate we have new data to push to the buffer
+            newDataToPush = true;
+        } else {
+            // set the time to zero which will enable the consumer to ignore the data
+            rngBcnDataNew.individual_time_ms[index] = 0;
+        }
+    }
+    // Save data into the buffer to be fused when the fusion time horizon catches up with it
+    if (newDataToPush) {
+        // get the mean of the non-zero times
+        uint64_t sum = 0;
+        uint8_t N_samples = 0;
+        for (uint8_t index=0; index < MAX(N_beacons,10); index++) {
+            if (rngBcnDataNew.individual_time_ms[index] > 0) {
+                sum += rngBcnDataNew.individual_time_ms[index];
+                N_samples += 1;
+            }
+        }
+        if (N_samples > 0) {
+            rngBcnDataNew.time_ms = sum / N_samples;
+            lastRngBcnMeasTime_ms = rngBcnDataNew.time_ms;
+            storedRangeBeacon.push(rngBcnDataNew);
+        }
+    }
+
+    // Check the buffer for measurements that have been overtaken by the fusion time horizon and need to be fused
+    rngBcnDataToFuse = storedRangeBeacon.recall(rngBcnDataDelayed,imuDataDelayed.time_ms);
+}
 #endif // HAL_CPU_CLASS

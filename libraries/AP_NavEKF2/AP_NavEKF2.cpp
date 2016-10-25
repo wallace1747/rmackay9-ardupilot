@@ -491,6 +491,32 @@ const AP_Param::GroupInfo NavEKF2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("TERR_GRAD", 43, NavEKF2, _terrGradMax, 0.1f),
 
+    // @Param: BCN_M_NSE
+    // @DisplayName: Range beacon measurement noise (m)
+    // @Description: This is the RMS value of noise in the range beacon measurement. Increasing it reduces the weighting on this measurement.
+    // @Range: 0.1 10.0
+    // @Increment: 0.1
+    // @User: Advanced
+    // @Units: m
+    AP_GROUPINFO("BCN_M_NSE", 44, NavEKF2, _rngBcnNoise, 1.0f),
+
+    // @Param: BCN_I_GTE
+    // @DisplayName: Range beacon measurement gate size
+    // @Description: This sets the percentage number of standard deviations applied to the range beacon measurement innovation consistency check. Decreasing it makes it more likely that good measurements will be rejected. Increasing it makes it more likely that bad measurements will be accepted.
+    // @Range: 100 1000
+    // @Increment: 25
+    // @User: Advanced
+    AP_GROUPINFO("BCN_I_GTE", 45, NavEKF2, _rngBcnInnovGate, 500),
+
+    // @Param: BCN_DELAY
+    // @DisplayName: Range beacon measurement delay (msec)
+    // @Description: This is the number of msec that the range beacon measurements lag behind the inertial measurements. It is the time from the end of the optical flow averaging period and does not include the time delay due to the 100msec of averaging within the flow sensor.
+    // @Range: 0 250
+    // @Increment: 10
+    // @User: Advanced
+    // @Units: msec
+    AP_GROUPINFO("BCN_DELAY", 46, NavEKF2, _rngBcnDelay_ms, 50),
+
     AP_GROUPEND
 };
 
