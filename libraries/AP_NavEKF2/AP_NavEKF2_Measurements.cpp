@@ -678,7 +678,7 @@ void NavEKF2_core::readRngBcnData()
             rngBcnDataNew.rng[index] = beacon->beacon_distance(index);
 
             // set the beacon position
-            rngBcnDataNew.posNED[index] = beacon->beacon_position(index);
+            rngBcnDataNew.beacon_posNED[index] = beacon->beacon_position(index);
 
             // indicate we have new data to push to the buffer
             newDataToPush = true;

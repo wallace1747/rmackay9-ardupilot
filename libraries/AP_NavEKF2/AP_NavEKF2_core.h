@@ -394,11 +394,11 @@ private:
     };
 
     struct rng_bcn_elements {
-        float       rng[10];        // range measurement to each beacon (m)
-        Vector3f    posNED[10];     // NED position of each beacon (m)
-        float       rngErr[10];     // range measurement error 1-std (m)
+        float       rng[10];                // range measurement to each beacon (m)
+        Vector3f    beacon_posNED[10];      // NED position of each beacon (m)
+        float       rngErr[10];             // range measurement error 1-std (m)
         uint32_t    individual_time_ms[10]; // time stamp for the individual measurements (msec)
-        uint32_t    time_ms;        // average of the indivudual time stamps (msec)
+        uint32_t    time_ms;                // average of the indivudual time stamps (msec)
     };
 
     struct tas_elements {
@@ -916,7 +916,7 @@ private:
     bool gpsDataToFuse;             // true when valid GPS data has arrived at the fusion time horizon.
     bool magDataToFuse;             // true when valid magnetometer data has arrived at the fusion time horizon
     Vector2f heldVelNE;             // velocity held when no aiding is available
-    enum AidingMode {AID_ABSOLUTE=0,    // GPS aiding is being used (optical flow may also be used) so position estimates are absolute.
+    enum AidingMode {AID_ABSOLUTE=0,    // GPS or some other form of absolute position reference aiding is being used (optical flow may also be used in parallel) so position estimates are absolute.
                      AID_NONE=1,       // no aiding is being used so only attitude and height estimates are available. Either constVelMode or constPosMode must be used to constrain tilt drift.
                      AID_RELATIVE=2    // only optical flow aiding is being used so position estimates will be relative
                     };

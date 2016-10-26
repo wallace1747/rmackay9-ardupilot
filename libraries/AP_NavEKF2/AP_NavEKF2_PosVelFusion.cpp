@@ -810,9 +810,9 @@ void NavEKF2_core::FuseRngBcn(uint8_t beaconIndex)
     pn = stateStruct.position.x;
     pe = stateStruct.position.y;
     pd = stateStruct.position.z;
-    bcn_pn = rngBcnDataDelayed.posNED[beaconIndex].x;
-    bcn_pe = rngBcnDataDelayed.posNED[beaconIndex].y;
-    bcn_pd = rngBcnDataDelayed.posNED[beaconIndex].z;
+    bcn_pn = rngBcnDataDelayed.beacon_posNED[beaconIndex].x;
+    bcn_pe = rngBcnDataDelayed.beacon_posNED[beaconIndex].y;
+    bcn_pd = rngBcnDataDelayed.beacon_posNED[beaconIndex].z;
 
     // correct the beacon position for the apparent shift due to timestamp variation between beacons
     float timeOffset = 0.001f * (float)(rngBcnDataDelayed.individual_time_ms[beaconIndex] - rngBcnDataDelayed.time_ms);
@@ -821,7 +821,7 @@ void NavEKF2_core::FuseRngBcn(uint8_t beaconIndex)
     bcn_pd = stateStruct.velocity.z * timeOffset;
 
     // predicted range
-    Vector3f deltaPosNED = stateStruct.position - rngBcnDataDelayed.posNED[beaconIndex];
+    Vector3f deltaPosNED = stateStruct.position - rngBcnDataDelayed.beacon_posNED[beaconIndex];
     rngPred = deltaPosNED.length();
 
     // perform fusion of range measurement
