@@ -950,8 +950,11 @@ private:
     bool rngBcnTimeout;                 // boolean true if range beacon measurements have faled innovation consistency checks for too long
     float varInnovRngBcn;               // range beacon observation innovation variance (m^2)
     float innovRngBcn;                  // range beacon observation innovation (m)
-    uint32_t lastRngBcnMeasTime_ms;     // last time we received a range beacon measurement (msec)
+    uint32_t lastTimeRngBcn_ms[10];     // last time we received a range beacon measurement (msec)
     bool rngBcnDataToFuse;              // true when there is new range beacon data to fuse
+    Vector3f beaconVehiclePosNED;       // NED position estimate from the beacon system (NED)
+    float beaconVehiclePosErr;          // estimated position error from the beacon system (m)
+    uint32_t beaconLast3DmeasTime_ms;   // last time the beacon system returned a 3D fix (msec)
 
     // height source selection logic
     uint8_t activeHgtSource;    // integer defining active height source

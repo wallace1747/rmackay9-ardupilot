@@ -665,10 +665,11 @@ void NavEKF2_core::readRngBcnData()
         // check if the beacon should be used
         if (beacon &&
                 beacon->beacon_healthy(index) &&
-                beacon->beacon_last_update_ms(index) != timeTasReceived_ms) {
+                beacon->beacon_last_update_ms(index) != lastTimeRngBcn_ms[index]) {
 
             // set the timestamp, correcting for measurement delay and average intersampling delay due to the filter update rate
-            rngBcnDataNew.individual_time_ms[index] = beacon->beacon_last_update_ms(index) - frontend->_rngBcnDelay_ms - localFilterTimeStep_ms/2;
+            lastTimeRngBcn_ms[index] = beacon->beacon_last_update_ms(index);
+            rngBcnDataNew.individual_time_ms[index] = lastTimeRngBcn_ms[index] - frontend->_rngBcnDelay_ms - localFilterTimeStep_ms/2;
 
             // set the range noise
             // TODO the range library should provide the noise/accuracy estimate for each beacon
@@ -687,6 +688,12 @@ void NavEKF2_core::readRngBcnData()
             rngBcnDataNew.individual_time_ms[index] = 0;
         }
     }
+
+    // Check if the beaon system has returned a 3D fix
+    if (beacon && beacon->get_vehicle_position_ned(beaconVehiclePosNED, beaconVehiclePosErr)) {
+        beaconLast3DmeasTime_ms = imuSampleTime_ms;
+    }
+
     // Save data into the buffer to be fused when the fusion time horizon catches up with it
     if (newDataToPush) {
         // get the mean of the non-zero times
@@ -700,7 +707,6 @@ void NavEKF2_core::readRngBcnData()
         }
         if (N_samples > 0) {
             rngBcnDataNew.time_ms = sum / N_samples;
-            lastRngBcnMeasTime_ms = rngBcnDataNew.time_ms;
             storedRangeBeacon.push(rngBcnDataNew);
         }
     }
