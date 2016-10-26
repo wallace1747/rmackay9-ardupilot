@@ -165,7 +165,7 @@ void NavEKF2_core::setAidingMode()
         // and IMU gyro bias estimates have stabilised
         bool filterIsStable = tiltAlignComplete && yawAlignComplete && checkGyroCalStatus();
         // If GPS usage has been prohiited then we use flow aiding provided optical flow data is present
-        // GPS aiding is the perferred option unless excluded by the user
+        // GPS aiding is the preferred option unless excluded by the user
         if((frontend->_fusionModeGPS) != 3 && readyToUseGPS() && filterIsStable && !gpsInhibit) {
             PV_AidingMode = AID_ABSOLUTE;
         } else if (optFlowDataPresent() && filterIsStable) {
@@ -317,6 +317,12 @@ bool NavEKF2_core::optFlowDataPresent(void) const
 bool NavEKF2_core::readyToUseGPS(void) const
 {
     return validOrigin && tiltAlignComplete && yawAlignComplete && gpsGoodToAlign && (frontend->_fusionModeGPS != 3) && gpsDataToFuse;
+}
+
+// return true if the filter to be ready to use the beacon range measurements
+bool NavEKF2_core::readyToUseRangeBeacon(void) const
+{
+    return tiltAlignComplete && yawAlignComplete && rngBcnGoodToAlign && rngBcnDataToFuse;
 }
 
 // return true if we should use the compass

@@ -689,9 +689,16 @@ void NavEKF2_core::readRngBcnData()
         }
     }
 
-    // Check if the beaon system has returned a 3D fix
+    // Check if the beacon system has returned a 3D fix
     if (beacon && beacon->get_vehicle_position_ned(beaconVehiclePosNED, beaconVehiclePosErr)) {
         beaconLast3DmeasTime_ms = imuSampleTime_ms;
+    }
+
+    // Check if the range beacon data can be used to align the vehicle position
+    if (imuSampleTime_ms - beaconLast3DmeasTime_ms < 500 && beaconVehiclePosErr < 1.0f) {
+        rngBcnGoodToAlign = true;
+    } else {
+        rngBcnGoodToAlign = false;
     }
 
     // Save data into the buffer to be fused when the fusion time horizon catches up with it

@@ -575,6 +575,9 @@ private:
     // return true if the vehicle code has requested the filter to be ready for flight
     bool readyToUseGPS(void) const;
 
+    // return true if the filter to be ready to use the beacon range measurements
+    bool readyToUseRangeBeacon(void) const;
+
     // Check for filter divergence
     void checkDivergence(void);
 
@@ -955,6 +958,7 @@ private:
     Vector3f beaconVehiclePosNED;       // NED position estimate from the beacon system (NED)
     float beaconVehiclePosErr;          // estimated position error from the beacon system (m)
     uint32_t beaconLast3DmeasTime_ms;   // last time the beacon system returned a 3D fix (msec)
+    bool rngBcnGoodToAlign;             // true when the range beacon systems 3D fix can be used to align the filter
 
     // height source selection logic
     uint8_t activeHgtSource;    // integer defining active height source
