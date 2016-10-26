@@ -23,12 +23,22 @@ void NavEKF2_core::ResetVelocity(void)
     velResetNE.x = stateStruct.velocity.x;
     velResetNE.y = stateStruct.velocity.y;
 
+    // reset the corresponding covariances
+    zeroRows(P,3,4);
+    zeroCols(P,3,4);
+
     if (PV_AidingMode != AID_ABSOLUTE) {
         stateStruct.velocity.zero();
+        // set the variances using the measurement noise parameter
+        P[4][4] = P[3][3] = sq(frontend->_gpsHorizVelNoise);
     } else {
-        // reset horizontal velocity states to the GPS velocity
-        stateStruct.velocity.x  = gpsDataNew.vel.x; // north velocity from blended accel data
-        stateStruct.velocity.y  = gpsDataNew.vel.y; // east velocity from blended accel data
+        // reset horizontal velocity states to the GPS velocity if available
+        if (imuSampleTime_ms - lastTimeGpsReceived_ms < 250) {
+            stateStruct.velocity.x  = gpsDataNew.vel.x; // north velocity from blended accel data
+            stateStruct.velocity.y  = gpsDataNew.vel.y; // east velocity from blended accel data
+            // set the variances using the reported GPS speed accuracy
+            P[4][4] = P[3][3] = sq(MAX(frontend->_gpsHorizVelNoise,gpsSpdAccuracy));
+        }
     }
     for (uint8_t i=0; i<imu_buffer_length; i++) {
         storedOutput[i].velocity.x = stateStruct.velocity.x;
@@ -46,12 +56,6 @@ void NavEKF2_core::ResetVelocity(void)
     // store the time of the reset
     lastVelReset_ms = imuSampleTime_ms;
 
-    // reset the corresponding covariances
-    zeroRows(P,3,4);
-    zeroCols(P,3,4);
-
-    // set the variances to the measurement variance
-    P[4][4] = P[3][3] = sq(frontend->_gpsHorizVelNoise);
 
 }
 
@@ -62,14 +66,31 @@ void NavEKF2_core::ResetPosition(void)
     posResetNE.x = stateStruct.position.x;
     posResetNE.y = stateStruct.position.y;
 
+    // reset the corresponding covariances
+    zeroRows(P,6,7);
+    zeroCols(P,6,7);
+
     if (PV_AidingMode != AID_ABSOLUTE) {
         // reset all position state history to the last known position
         stateStruct.position.x = lastKnownPositionNE.x;
         stateStruct.position.y = lastKnownPositionNE.y;
+        // set the variances using the position measurement noise parameter
+        P[6][6] = P[7][7] = sq(frontend->_gpsHorizPosNoise);
     } else  {
-        // write to state vector and compensate for offset  between last GPs measurement and the EKF time horizon
-        stateStruct.position.x = gpsDataNew.pos.x  + 0.001f*gpsDataNew.vel.x*(float(imuDataDelayed.time_ms) - float(gpsDataNew.time_ms));
-        stateStruct.position.y = gpsDataNew.pos.y  + 0.001f*gpsDataNew.vel.y*(float(imuDataDelayed.time_ms) - float(gpsDataNew.time_ms));
+        // Use GPS data as first preference if fresh data is available
+        if (imuSampleTime_ms - lastTimeGpsReceived_ms < 250) {
+            // write to state vector and compensate for offset  between last GPS measurement and the EKF time horizon
+            stateStruct.position.x = gpsDataNew.pos.x  + 0.001f*gpsDataNew.vel.x*(float(imuDataDelayed.time_ms) - float(gpsDataNew.time_ms));
+            stateStruct.position.y = gpsDataNew.pos.y  + 0.001f*gpsDataNew.vel.y*(float(imuDataDelayed.time_ms) - float(gpsDataNew.time_ms));
+            // set the variances using the position measurement noise parameter
+            P[6][6] = P[7][7] = sq(MAX(gpsPosAccuracy,frontend->_gpsHorizPosNoise));
+        } else if (imuSampleTime_ms - rngBcnLast3DmeasTime_ms < 250) {
+            // use the range beacon data as a second preference
+            stateStruct.position.x = beaconVehiclePosNED.x;
+            stateStruct.position.y = beaconVehiclePosNED.y;
+            // set the variances using the beacon sensors reported variance
+            P[6][6] = P[7][7] = sq(beaconVehiclePosErr);
+        }
     }
     for (uint8_t i=0; i<imu_buffer_length; i++) {
         storedOutput[i].position.x = stateStruct.position.x;
@@ -86,13 +107,6 @@ void NavEKF2_core::ResetPosition(void)
 
     // store the time of the reset
     lastPosReset_ms = imuSampleTime_ms;
-
-    // reset the corresponding covariances
-    zeroRows(P,6,7);
-    zeroCols(P,6,7);
-
-    // set the variances to the measurement variance
-    P[6][6] = P[7][7] = sq(frontend->_gpsHorizPosNoise);
 
 }
 

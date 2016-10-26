@@ -166,7 +166,9 @@ void NavEKF2_core::setAidingMode()
         bool filterIsStable = tiltAlignComplete && yawAlignComplete && checkGyroCalStatus();
         // If GPS usage has been prohiited then we use flow aiding provided optical flow data is present
         // GPS aiding is the preferred option unless excluded by the user
-        if((frontend->_fusionModeGPS) != 3 && readyToUseGPS() && filterIsStable && !gpsInhibit) {
+        bool canUseGPS = ((frontend->_fusionModeGPS) != 3 && readyToUseGPS() && filterIsStable && !gpsInhibit);
+        bool canUseRangeBeacon = readyToUseRangeBeacon() && filterIsStable;
+        if(canUseGPS || canUseRangeBeacon) {
             PV_AidingMode = AID_ABSOLUTE;
         } else if (optFlowDataPresent() && filterIsStable) {
             PV_AidingMode = AID_RELATIVE;
@@ -249,16 +251,22 @@ void NavEKF2_core::setAidingMode()
             // Reset the last valid flow fusion time
             prevFlowFuseTime_ms = imuSampleTime_ms;
         } else if (PV_AidingMode == AID_ABSOLUTE) {
+            bool canUseGPS = ((frontend->_fusionModeGPS) != 3 && readyToUseGPS() && !gpsInhibit);
+            bool canUseRangeBeacon = readyToUseRangeBeacon();
             // We have commenced aiding and GPS usage is allowed
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF2 IMU%u is using GPS",(unsigned)imu_index);
+            if (canUseGPS) {
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF2 IMU%u is using GPS",(unsigned)imu_index);
+            }
             posTimeout = false;
             velTimeout = false;
-            // we need to reset the GPS timers to prevent GPS timeout logic being invoked on entry into GPS aiding
-            // this is because the EKF can be interrupted for an arbitrary amount of time during vehicle arming checks
-            lastTimeGpsReceived_ms = imuSampleTime_ms;
-            secondLastGpsTime_ms = imuSampleTime_ms;
-            // reset the last valid position fix time to prevent unwanted activation of GPS glitch logic
+            // We have commenced aiding and range beacon usage is allowed
+            if (canUseRangeBeacon) {
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF2 IMU%u is using range beacons",(unsigned)imu_index);
+            }
+            // reset the last fusion accepted times to prevent unwanted activation of timeout logic
             lastPosPassTime_ms = imuSampleTime_ms;
+            lastVelPassTime_ms = imuSampleTime_ms;
+            lastRngBcnPassTime_ms = imuSampleTime_ms;
         }
 
         // Always reset the position and velocity when changing mode
@@ -349,6 +357,8 @@ bool NavEKF2_core::setOriginLLH(struct Location &loc)
         return false;
     }
     EKF_origin = loc;
+    // define Earth rotation vector in the NED navigation frame at the origin
+    calcEarthRateNED(earthRateNED, _ahrs->get_home().lat);
     validOrigin = true;
     return true;
 }
@@ -361,7 +371,7 @@ void NavEKF2_core::setOrigin()
     // define Earth rotation vector in the NED navigation frame at the origin
     calcEarthRateNED(earthRateNED, _ahrs->get_home().lat);
     validOrigin = true;
-    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF2 IMU%u Origin Set",(unsigned)imu_index);
+    GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF2 IMU%u Origin set to GPS",(unsigned)imu_index);
 }
 
 // record a yaw reset event

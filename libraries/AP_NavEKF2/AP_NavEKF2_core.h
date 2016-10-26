@@ -957,7 +957,7 @@ private:
     bool rngBcnDataToFuse;              // true when there is new range beacon data to fuse
     Vector3f beaconVehiclePosNED;       // NED position estimate from the beacon system (NED)
     float beaconVehiclePosErr;          // estimated position error from the beacon system (m)
-    uint32_t beaconLast3DmeasTime_ms;   // last time the beacon system returned a 3D fix (msec)
+    uint32_t rngBcnLast3DmeasTime_ms;   // last time the beacon system returned a 3D fix (msec)
     bool rngBcnGoodToAlign;             // true when the range beacon systems 3D fix can be used to align the filter
 
     // height source selection logic
