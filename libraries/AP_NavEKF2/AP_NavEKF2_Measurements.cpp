@@ -657,35 +657,48 @@ void NavEKF2_core::readRngBcnData()
 {
     // get the location of the beacon data
     const AP_Beacon *beacon = _ahrs->get_beacon();
+
     // get the number of beacons in use
     uint8_t N_beacons = beacon->count();
-    // search through the beacons for new data
+
+    // search through all the beacons for new data and if we find it stop searching and push the data into the observation buffer
     bool newDataToPush = false;
-    for (uint8_t index=0; index < MAX(N_beacons,10); index++) {
-        // check if the beacon should be used
+    uint8_t numRngBcnsChecked = 0;
+    // start the search one index up from where we left it last time
+    uint8_t index = lastRngBcnChecked + 1;
+    while (!newDataToPush && numRngBcnsChecked < N_beacons) {
+        // track the number of beacons checked
+        numRngBcnsChecked++;
+
+        // wrap search index
+        if (index >= N_beacons) {
+            index = 0;
+        }
+
+        // check that the beacon is healthy and has new data
         if (beacon &&
                 beacon->beacon_healthy(index) &&
-                beacon->beacon_last_update_ms(index) != lastTimeRngBcn_ms[index]) {
-
+                beacon->beacon_last_update_ms(index) != lastTimeRngBcn_ms[index])
+        {
             // set the timestamp, correcting for measurement delay and average intersampling delay due to the filter update rate
             lastTimeRngBcn_ms[index] = beacon->beacon_last_update_ms(index);
-            rngBcnDataNew.individual_time_ms[index] = lastTimeRngBcn_ms[index] - frontend->_rngBcnDelay_ms - localFilterTimeStep_ms/2;
+            rngBcnDataNew.time_ms = lastTimeRngBcn_ms[index] - frontend->_rngBcnDelay_ms - localFilterTimeStep_ms/2;
 
             // set the range noise
             // TODO the range library should provide the noise/accuracy estimate for each beacon
-            rngBcnDataNew.rngErr[index] = frontend->_rngBcnNoise;
+            rngBcnDataNew.rngErr = frontend->_rngBcnNoise;
 
             // set the range measurement
-            rngBcnDataNew.rng[index] = beacon->beacon_distance(index);
+            rngBcnDataNew.rng = beacon->beacon_distance(index);
 
             // set the beacon position
-            rngBcnDataNew.beacon_posNED[index] = beacon->beacon_position(index);
+            rngBcnDataNew.beacon_posNED = beacon->beacon_position(index);
 
             // indicate we have new data to push to the buffer
             newDataToPush = true;
-        } else {
-            // set the time to zero which will enable the consumer to ignore the data
-            rngBcnDataNew.individual_time_ms[index] = 0;
+
+            // update the last checked index
+            lastRngBcnChecked = index;
         }
     }
 
@@ -721,19 +734,7 @@ void NavEKF2_core::readRngBcnData()
 
     // Save data into the buffer to be fused when the fusion time horizon catches up with it
     if (newDataToPush) {
-        // get the mean of the non-zero times
-        uint64_t sum = 0;
-        uint8_t N_samples = 0;
-        for (uint8_t index=0; index < MAX(N_beacons,10); index++) {
-            if (rngBcnDataNew.individual_time_ms[index] > 0) {
-                sum += rngBcnDataNew.individual_time_ms[index];
-                N_samples += 1;
-            }
-        }
-        if (N_samples > 0) {
-            rngBcnDataNew.time_ms = sum / N_samples;
-            storedRangeBeacon.push(rngBcnDataNew);
-        }
+        storedRangeBeacon.push(rngBcnDataNew);
     }
 
     // Check the buffer for measurements that have been overtaken by the fusion time horizon and need to be fused

@@ -43,6 +43,7 @@
 #define HGT_SOURCE_BARO 0
 #define HGT_SOURCE_RNG  1
 #define HGT_SOURCE_GPS  2
+#define HGT_SOURCE_BCN  3
 
 class AP_AHRS;
 
@@ -394,11 +395,10 @@ private:
     };
 
     struct rng_bcn_elements {
-        float       rng[10];                // range measurement to each beacon (m)
-        Vector3f    beacon_posNED[10];      // NED position of each beacon (m)
-        float       rngErr[10];             // range measurement error 1-std (m)
-        uint32_t    individual_time_ms[10]; // time stamp for the individual measurements (msec)
-        uint32_t    time_ms;                // average of the indivudual time stamps (msec)
+        float       rng;                // range measurement to each beacon (m)
+        Vector3f    beacon_posNED;      // NED position of the beacon (m)
+        float       rngErr;             // range measurement error 1-std (m)
+        uint32_t    time_ms;            // measurement timestamp (msec)
     };
 
     struct tas_elements {
@@ -439,7 +439,7 @@ private:
     void FuseVelPosNED();
 
     // fuse range beacon measurments for the specified beacon index
-    void FuseRngBcn(uint8_t beaconIndex);
+    void FuseRngBcn();
 
     // fuse magnetometer measurements
     void FuseMagnetometer();
@@ -959,6 +959,7 @@ private:
     float beaconVehiclePosErr;          // estimated position error from the beacon system (m)
     uint32_t rngBcnLast3DmeasTime_ms;   // last time the beacon system returned a 3D fix (msec)
     bool rngBcnGoodToAlign;             // true when the range beacon systems 3D fix can be used to align the filter
+    uint8_t lastRngBcnChecked;          // index of the last range beacon checked for data
 
     // height source selection logic
     uint8_t activeHgtSource;    // integer defining active height source

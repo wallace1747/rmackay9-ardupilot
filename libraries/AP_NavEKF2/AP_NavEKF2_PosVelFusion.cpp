@@ -805,7 +805,7 @@ void NavEKF2_core::selectHeightForFusion()
     }
 }
 
-void NavEKF2_core::FuseRngBcn(uint8_t beaconIndex)
+void NavEKF2_core::FuseRngBcn()
 {
     // declarations
     float pn;
@@ -814,7 +814,7 @@ void NavEKF2_core::FuseRngBcn(uint8_t beaconIndex)
     float bcn_pn;
     float bcn_pe;
     float bcn_pd;
-    const float R_BCN = sq(MAX(rngBcnDataDelayed.rngErr[beaconIndex] , 0.1f));
+    const float R_BCN = sq(MAX(rngBcnDataDelayed.rngErr , 0.1f));
     float rngPred;
 
     // health is set bad until test passed
@@ -824,18 +824,12 @@ void NavEKF2_core::FuseRngBcn(uint8_t beaconIndex)
     pn = stateStruct.position.x;
     pe = stateStruct.position.y;
     pd = stateStruct.position.z;
-    bcn_pn = rngBcnDataDelayed.beacon_posNED[beaconIndex].x;
-    bcn_pe = rngBcnDataDelayed.beacon_posNED[beaconIndex].y;
-    bcn_pd = rngBcnDataDelayed.beacon_posNED[beaconIndex].z;
-
-    // correct the beacon position for the apparent shift due to timestamp variation between beacons
-    float timeOffset = 0.001f * (float)(rngBcnDataDelayed.individual_time_ms[beaconIndex] - rngBcnDataDelayed.time_ms);
-    bcn_pn = stateStruct.velocity.x * timeOffset;
-    bcn_pe = stateStruct.velocity.y * timeOffset;
-    bcn_pd = stateStruct.velocity.z * timeOffset;
+    bcn_pn = rngBcnDataDelayed.beacon_posNED.x;
+    bcn_pe = rngBcnDataDelayed.beacon_posNED.y;
+    bcn_pd = rngBcnDataDelayed.beacon_posNED.z;
 
     // predicted range
-    Vector3f deltaPosNED = stateStruct.position - rngBcnDataDelayed.beacon_posNED[beaconIndex];
+    Vector3f deltaPosNED = stateStruct.position - rngBcnDataDelayed.beacon_posNED;
     rngPred = deltaPosNED.length();
 
     // perform fusion of range measurement
@@ -897,7 +891,7 @@ void NavEKF2_core::FuseRngBcn(uint8_t beaconIndex)
         }
 
         // calculate measurement innovation
-        innovRngBcn = rngPred - rngBcnDataDelayed.rng[beaconIndex];
+        innovRngBcn = rngPred - rngBcnDataDelayed.rng;
 
         // calculate the innovation consistency test ratio
         rngBcnTestRatio = sq(innovRngBcn) / (sq(MAX(0.01f * (float)frontend->_rngBcnInnovGate, 1.0f)) * varInnovRngBcn);

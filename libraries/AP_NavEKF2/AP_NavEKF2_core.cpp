@@ -83,7 +83,12 @@ bool NavEKF2_core::setup_core(NavEKF2 *_frontend, uint8_t _imu_index, uint8_t _c
     if(!storedOF.init(OBS_BUFFER_LENGTH)) {
         return false;
     }
+    // Note: the use of dual range finders potentially doubles the amount of to be stored
     if(!storedRange.init(2*OBS_BUFFER_LENGTH)) {
+        return false;
+    }
+    // Note: range beacon data is read one beacon at a time and can arrive at a high rate
+    if(!storedRangeBeacon.init(imu_buffer_length)) {
         return false;
     }
     if(!storedIMU.init(imu_buffer_length)) {
