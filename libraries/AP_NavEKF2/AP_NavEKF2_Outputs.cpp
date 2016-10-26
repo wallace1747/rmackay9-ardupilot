@@ -76,6 +76,17 @@ void NavEKF2_core::getFlowDebug(float &varFlow, float &gndOffset, float &flowInn
     gndOffsetErr = sqrtf(Popt); // note Popt is constrained to be non-negative in EstimateTerrainOffset()
 }
 
+// return data for debugging range beacon fusion
+void NavEKF2_core::getRangeBeaconDebug(uint8_t &ID, float &rng, float &innov, float &innovVar, float &testRatio, Vector3f &beaconPosNED) const
+{
+    ID = rngBcnDataDelayed.beacon_ID;   // beacon identifier
+    rng = rngBcnDataDelayed.rng;        // measured range to beacon (m)
+    innov = innovRngBcn;                // range innovation (m)
+    innovVar = varInnovRngBcn;          // innovation variance (m^2)
+    testRatio = rngBcnTestRatio;        // innovation consistency test ratio
+    beaconPosNED = rngBcnDataDelayed.beacon_posNED; // beacon NED position
+}
+
 // provides the height limit to be observed by the control loops
 // returns false if no height limiting is required
 // this is needed to ensure the vehicle does not fly too high when using optical flow navigation
