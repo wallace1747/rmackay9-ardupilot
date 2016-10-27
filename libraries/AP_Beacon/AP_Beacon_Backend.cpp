@@ -47,8 +47,8 @@ void AP_Beacon_Backend::set_beacon_distance(uint8_t beacon_instance, float dista
     }
 
     // setup new beacon
-    if (beacon_instance > _frontend.num_beacons) {
-        _frontend.num_beacons = beacon_instance;
+    if (beacon_instance >= _frontend.num_beacons) {
+        _frontend.num_beacons = beacon_instance+1;
     }
 
     _frontend.beacon_state[beacon_instance].distance_update_ms = AP_HAL::millis();
@@ -67,8 +67,8 @@ void AP_Beacon_Backend::set_beacon_position(uint8_t beacon_instance, const Vecto
     }
 
     // setup new beacon
-    if (beacon_instance > _frontend.num_beacons) {
-        _frontend.num_beacons = beacon_instance;
+    if (beacon_instance >= _frontend.num_beacons) {
+        _frontend.num_beacons = beacon_instance+1;
     }
 
     ::printf("beacon %d x:%4.2f y:%4.2f z:%4.2f\n", (int)beacon_instance, (double)pos.x, (double)pos.y, (double)pos.z);
