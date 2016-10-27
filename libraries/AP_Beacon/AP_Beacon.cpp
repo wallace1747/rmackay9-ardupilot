@@ -162,6 +162,15 @@ bool AP_Beacon::get_beacon_data(uint8_t beacon_instance, struct BeaconState& sta
     return true;
 }
 
+// return distance to beacon in meters
+float AP_Beacon::beacon_distance(uint8_t beacon_instance) const
+{
+    if (!beacon_state[beacon_instance].healthy) {
+        return 0.0f;
+    }
+    return beacon_state[beacon_instance].distance;
+}
+
 // return beacon position
 Vector3f AP_Beacon::beacon_position(uint8_t beacon_instance) const
 {
