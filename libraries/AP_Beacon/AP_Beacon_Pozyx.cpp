@@ -58,9 +58,6 @@ void AP_Beacon_Pozyx::update(void)
     while (nbytes-- > 0) {
         char c = uart->read();
 
-        // debug
-        ::printf("|%x|",(unsigned int)c);
-
         switch (parse_state) {
 
             default:
@@ -68,8 +65,6 @@ void AP_Beacon_Pozyx::update(void)
                 if (c == AP_BEACON_POZYX_HEADER) {
                     parse_state = ParseState_WaitingForMsgId;
                     linebuf_len = 0;
-                    // debug
-                    ::printf("2state %d\n", (int)parse_state);
                 }
                 break;
 
@@ -79,13 +74,9 @@ void AP_Beacon_Pozyx::update(void)
                     parse_msg_id == AP_BEACON_POZYX_MSGID_BEACON_DIST ||
                     parse_msg_id == AP_BEACON_POZYX_MSGID_POSITION) {
                     parse_state = ParseState_WaitingForLen;
-                    // debug
-                    ::printf("3state %d\n", (int)parse_state);
                 } else {
                     // invalid message id
                     parse_state = ParseState_WaitingForHeader;
-                    // debug
-                    ::printf("4state %d\n", (int)parse_state);
                 }
                 break;
 
@@ -94,12 +85,8 @@ void AP_Beacon_Pozyx::update(void)
                 if (parse_msg_len > AP_BEACON_POZYX_MSG_LEN_MAX) {
                     // invalid message length
                     parse_state = ParseState_WaitingForHeader;
-                    // debug
-                    ::printf("5state %d\n", (int)parse_state);
                 } else {
                     parse_state = ParseState_WaitingForContents;
-                    // debug
-                    ::printf("5state %d\n", (int)parse_state);
                 }
                 break;
 
@@ -111,8 +98,6 @@ void AP_Beacon_Pozyx::update(void)
                     parse_buffer();
                     // reset state for next message
                     parse_state = ParseState_WaitingForHeader;
-                    // debug
-                    ::printf("Done! 6state %d\n", (int)parse_state);
                 }
                 break;
         }
@@ -131,8 +116,6 @@ void AP_Beacon_Pozyx::parse_buffer()
     }
     // return if failed checksum check
     if (checksum != linebuf[linebuf_len-1]) {
-        // debug
-        ::printf("Failed Check: sent:%d calc:%d\n", (int)linebuf[linebuf_len-1], (int)checksum);
         return;
     }
 
@@ -148,8 +131,6 @@ void AP_Beacon_Pozyx::parse_buffer()
                 int32_t beacon_z = (uint32_t)linebuf[13] << 24 | (uint32_t)linebuf[12] << 16 | (uint32_t)linebuf[11] << 8 | (uint32_t)linebuf[10];
                 set_beacon_position(beacon_id, Vector3f(beacon_x / 1000.0f, beacon_y / 1000.0f, beacon_z / 1000.0f));
                 parsed = true;
-                // debug
-                //::printf("beacon x:%ld y:%ld z:%ld\n", (long int)beacon_x, (long int)beacon_y, (long int)beacon_z);
             }
             break;
 
