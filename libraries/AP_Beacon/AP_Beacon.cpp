@@ -80,6 +80,21 @@ void AP_Beacon::init(void)
     }
 }
 
+// return true if beacon feature is enabled
+bool AP_Beacon::enabled(void)
+{
+    return (_type != AP_BeaconType_None);
+}
+
+// return true if sensor is basically healthy (we are receiving data)
+bool AP_Beacon::healthy(void)
+{
+    if (_driver == NULL || _type == AP_BeaconType_None) {
+        return false;
+    }
+    return _driver->healthy();
+}
+
 // update state. This should be called often from the main loop
 void AP_Beacon::update(void)
 {

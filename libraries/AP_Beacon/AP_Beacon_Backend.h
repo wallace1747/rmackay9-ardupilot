@@ -26,6 +26,9 @@ public:
     // constructor. This incorporates initialisation as well.
 	AP_Beacon_Backend(AP_Beacon &frontend, AP_SerialManager &serial_manager);
 
+	// return true if sensor is basically healthy (we are receiving data)
+    virtual bool healthy() = 0;
+
     // update
     virtual void update() = 0;
 

@@ -32,6 +32,13 @@ AP_Beacon_Pozyx::AP_Beacon_Pozyx(AP_Beacon &frontend, AP_SerialManager &serial_m
     }
 }
 
+// return true if sensor is basically healthy (we are receiving data)
+bool AP_Beacon_Pozyx::healthy()
+{
+    // healthy if we have parsed a message within the past 300ms
+    return ((AP_HAL::millis() - last_update_ms) < AP_BEACON_TIMEOUT_MS);
+}
+
 // update the state of the sensor
 void AP_Beacon_Pozyx::update(void)
 {
@@ -129,6 +136,7 @@ void AP_Beacon_Pozyx::parse_buffer()
         return;
     }
 
+    bool parsed = false;
     switch (parse_msg_id) {
 
         case AP_BEACON_POZYX_MSGID_BEACON_CONFIG:
@@ -139,7 +147,7 @@ void AP_Beacon_Pozyx::parse_buffer()
                 int32_t beacon_y = (uint32_t)linebuf[9] << 24 | (uint32_t)linebuf[8] << 16 | (uint32_t)linebuf[7] << 8 | (uint32_t)linebuf[6];
                 int32_t beacon_z = (uint32_t)linebuf[13] << 24 | (uint32_t)linebuf[12] << 16 | (uint32_t)linebuf[11] << 8 | (uint32_t)linebuf[10];
                 set_beacon_position(beacon_id, Vector3f(beacon_x / 1000.0f, beacon_y / 1000.0f, beacon_z / 1000.0f));
-
+                parsed = true;
                 // debug
                 //::printf("beacon x:%ld y:%ld z:%ld\n", (long int)beacon_x, (long int)beacon_y, (long int)beacon_z);
             }
@@ -150,6 +158,7 @@ void AP_Beacon_Pozyx::parse_buffer()
                 uint8_t beacon_id = linebuf[0];
                 uint32_t beacon_distance = (uint32_t)linebuf[4] << 24 | (uint32_t)linebuf[3] << 16 | (uint32_t)linebuf[2] << 8 | (uint32_t)linebuf[1];
                 set_beacon_distance(beacon_id, beacon_distance / 1000.0f);
+                parsed = true;
             }
             break;
 
@@ -160,11 +169,17 @@ void AP_Beacon_Pozyx::parse_buffer()
                 int32_t vehicle_z = (uint32_t)linebuf[11] << 24 | (uint32_t)linebuf[10] << 16 | (uint32_t)linebuf[9] << 8 | (uint32_t)linebuf[8];
                 int16_t position_error = (uint32_t)linebuf[13] << 8 | (uint32_t)linebuf[12];
                 set_vehicle_position_ned(Vector3f(vehicle_x / 1000.0f, vehicle_y / 1000.0f, vehicle_z / 1000.0f), position_error);
+                parsed = true;
             }
             break;
 
         default:
             // unrecognised message id
             break;
+    }
+
+    // record success
+    if (parsed) {
+        last_update_ms = AP_HAL::millis();
     }
 }

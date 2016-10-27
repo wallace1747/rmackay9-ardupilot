@@ -51,6 +51,12 @@ public:
     // initialise any available position estimators
     void init(void);
 
+    // return true if beacon feature is enabled
+    bool enabled(void);
+
+    // return true if sensor is basically healthy (we are receiving data)
+    bool healthy(void);
+
     // update state of all beacons
     void update(void);
 
