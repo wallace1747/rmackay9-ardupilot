@@ -464,6 +464,9 @@ void NavEKF2_core::UpdateFilter(bool predict)
         // Update states using GPS and altimeter data
         SelectVelPosFusion();
 
+        // Update states using range beacon data
+        SelectRngBcnFusion();
+
         // Update states using optical flow data
         SelectFlowFusion();
 

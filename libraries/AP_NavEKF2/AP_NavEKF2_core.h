@@ -450,7 +450,7 @@ private:
     // fuse selected position, velocity and height measurements
     void FuseVelPosNED();
 
-    // fuse range beacon measurments for the specified beacon index
+    // fuse range beacon measurements
     void FuseRngBcn();
 
     // fuse magnetometer measurements
