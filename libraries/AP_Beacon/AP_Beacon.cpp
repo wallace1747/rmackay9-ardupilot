@@ -162,10 +162,28 @@ bool AP_Beacon::get_beacon_data(uint8_t beacon_instance, struct BeaconState& sta
     return true;
 }
 
+// return individual beacon's id
+uint8_t AP_Beacon::beacon_id(uint8_t beacon_instance) const
+{
+    if (beacon_instance >= num_beacons) {
+        return 0;
+    }
+    return beacon_state[beacon_instance].id;
+}
+
+// return beacon health
+bool AP_Beacon::beacon_healthy(uint8_t beacon_instance) const
+{
+    if (beacon_instance >= num_beacons) {
+        return false;
+    }
+    return beacon_state[beacon_instance].healthy;
+}
+
 // return distance to beacon in meters
 float AP_Beacon::beacon_distance(uint8_t beacon_instance) const
 {
-    if (!beacon_state[beacon_instance].healthy) {
+    if (!beacon_state[beacon_instance].healthy || beacon_instance >= num_beacons) {
         return 0.0f;
     }
     return beacon_state[beacon_instance].distance;
@@ -179,4 +197,13 @@ Vector3f AP_Beacon::beacon_position(uint8_t beacon_instance) const
         return temp;
     }
     return beacon_state[beacon_instance].position;
+}
+
+// return last update time from beacon
+uint32_t AP_Beacon::beacon_last_update_ms(uint8_t beacon_instance) const
+{
+    if (_type == AP_BeaconType_None || beacon_instance >= num_beacons) {
+        return 0;
+    }
+    return beacon_state[beacon_instance].distance_update_ms;
 }
