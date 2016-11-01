@@ -38,6 +38,9 @@ void NavEKF2_core::ResetVelocity(void)
             stateStruct.velocity.y  = gpsDataNew.vel.y; // east velocity from blended accel data
             // set the variances using the reported GPS speed accuracy
             P[4][4] = P[3][3] = sq(MAX(frontend->_gpsHorizVelNoise,gpsSpdAccuracy));
+            // clear the timeout flags and counters
+            velTimeout = false;
+            lastVelPassTime_ms = imuSampleTime_ms;
         }
     }
     for (uint8_t i=0; i<imu_buffer_length; i++) {
@@ -84,12 +87,18 @@ void NavEKF2_core::ResetPosition(void)
             stateStruct.position.y = gpsDataNew.pos.y  + 0.001f*gpsDataNew.vel.y*(float(imuDataDelayed.time_ms) - float(gpsDataNew.time_ms));
             // set the variances using the position measurement noise parameter
             P[6][6] = P[7][7] = sq(MAX(gpsPosAccuracy,frontend->_gpsHorizPosNoise));
+            // clear the timeout flags and counters
+            posTimeout = false;
+            lastPosPassTime_ms = imuSampleTime_ms;
         } else if (imuSampleTime_ms - rngBcnLast3DmeasTime_ms < 250) {
             // use the range beacon data as a second preference
             stateStruct.position.x = beaconVehiclePosNED.x;
             stateStruct.position.y = beaconVehiclePosNED.y;
             // set the variances using the beacon sensors reported variance
             P[6][6] = P[7][7] = sq(beaconVehiclePosErr);
+            // clear the timeout flags and counters
+            rngBcnTimeout = false;
+            lastRngBcnPassTime_ms = imuSampleTime_ms;
         }
     }
     for (uint8_t i=0; i<imu_buffer_length; i++) {
@@ -129,6 +138,10 @@ void NavEKF2_core::ResetHeight(void)
     for (uint8_t i=0; i<imu_buffer_length; i++) {
         storedOutput[i].position.z = stateStruct.position.z;
     }
+
+    // clear the timeout flags and counters
+    hgtTimeout = false;
+    lastHgtPassTime_ms = imuSampleTime_ms;
 
     // reset the corresponding covariances
     zeroRows(P,8,8);
