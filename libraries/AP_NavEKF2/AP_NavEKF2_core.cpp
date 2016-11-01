@@ -276,6 +276,22 @@ void NavEKF2_core::InitialiseVariables()
     velOffsetNED.zero();
     posOffsetNED.zero();
 
+    // range beacon fusion variables
+    rngBcnStoreIndex = 0;
+    lastRngBcnPassTime_ms = 0;
+    rngBcnTestRatio = 0.0f;
+    rngBcnHealth = false;
+    rngBcnTimeout = true;
+    varInnovRngBcn = 0.0f;
+    innovRngBcn = 0.0f;
+    memset(&lastTimeRngBcn_ms, 0, sizeof(lastTimeRngBcn_ms));
+    rngBcnDataToFuse = false;
+    beaconVehiclePosNED.zero();
+    beaconVehiclePosErr = 1.0f;
+    rngBcnLast3DmeasTime_ms = 0;
+    rngBcnGoodToAlign = false;
+    lastRngBcnChecked = 0;
+
     // zero data buffers
     storedIMU.reset();
     storedGPS.reset();
@@ -284,6 +300,7 @@ void NavEKF2_core::InitialiseVariables()
     storedTAS.reset();
     storedRange.reset();
     storedOutput.reset();
+    storedRangeBeacon.reset();
 }
 
 // Initialise the states from accelerometer and magnetometer data (if present)
