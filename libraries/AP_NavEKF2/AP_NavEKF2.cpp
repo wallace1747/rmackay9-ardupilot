@@ -529,9 +529,9 @@ NavEKF2::NavEKF2(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng) :
     gpsPosVarAccScale(0.05f),       // Scale factor applied to horizontal position measurement variance due to manoeuvre acceleration
     magDelay_ms(60),                // Magnetometer measurement delay (msec)
     tasDelay_ms(240),               // Airspeed measurement delay (msec)
-    gpsRetryTimeUseTAS_ms(10000),   // GPS retry time with airspeed measurements (msec)
-    gpsRetryTimeNoTAS_ms(7000),     // GPS retry time without airspeed measurements (msec)
-    gpsFailTimeWithFlow_ms(1000),   // If we have no GPS for longer than this and we have optical flow, then we will switch across to using optical flow (msec)
+    tiltDriftTimeMax_ms(15000),      // Maximum number of ms allowed without any form of tilt aiding (GPS, flow, TAS, etc)
+    posRetryTimeUseVel_ms(10000),   // Position aiding retry time with velocity measurements (msec)
+    posRetryTimeNoVel_ms(7000),     // Position aiding retry time without velocity measurements (msec)
     hgtRetryTimeMode0_ms(10000),    // Height retry time with vertical velocity measurement (msec)
     hgtRetryTimeMode12_ms(5000),    // Height retry time without vertical velocity measurement (msec)
     tasRetryTime_ms(5000),          // True airspeed timeout and retry interval (msec)

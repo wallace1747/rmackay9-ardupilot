@@ -121,9 +121,8 @@ void NavEKF2_core::FuseRngBcn()
         // fail if the ratio is > 1, but don't fail if bad IMU data
         rngBcnHealth = ((rngBcnTestRatio < 1.0f) || badIMUdata);
 
-        // test the ratio before fusing data, forcing fusion if airspeed and position are timed out as we have no choice but to try and use airspeed to constrain error growth
-        rngBcnTimeout = (imuSampleTime_ms - lastRngBcnPassTime_ms) > 5000;
-        if (rngBcnHealth || (rngBcnTimeout && posTimeout)) {
+        // test the ratio before fusing data
+        if (rngBcnHealth) {
 
             // restart the counter
             lastRngBcnPassTime_ms = imuSampleTime_ms;

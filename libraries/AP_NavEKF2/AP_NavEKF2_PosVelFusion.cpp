@@ -306,11 +306,6 @@ void NavEKF2_core::FuseVelPosNED()
     // so we might as well take advantage of the computational efficiencies
     // associated with sequential fusion
     if (fuseVelData || fusePosData || fuseHgtData) {
-        // set the GPS data timeout depending on whether airspeed data is present
-        uint32_t gpsRetryTime;
-        if (useAirspeed()) gpsRetryTime = frontend->gpsRetryTimeUseTAS_ms;
-        else gpsRetryTime = frontend->gpsRetryTimeNoTAS_ms;
-
         // form the observation vector
         observation[0] = gpsDataDelayed.vel.x;
         observation[1] = gpsDataDelayed.vel.y;
@@ -390,8 +385,6 @@ void NavEKF2_core::FuseVelPosNED()
             float maxPosInnov2 = sq(MAX(0.01f * (float)frontend->_gpsPosInnovGate, 1.0f))*(varInnovVelPos[3] + varInnovVelPos[4]);
             posTestRatio = (sq(innovVelPos[3]) + sq(innovVelPos[4])) / maxPosInnov2;
             posHealth = ((posTestRatio < 1.0f) || badIMUdata);
-            // declare a timeout condition if we have been too long without data or not aiding
-            posTimeout = (((imuSampleTime_ms - lastPosPassTime_ms) > gpsRetryTime) || PV_AidingMode == AID_NONE);
             // use position data if healthy or timed out
             if (PV_AidingMode == AID_NONE) {
                 posHealth = true;
@@ -448,8 +441,6 @@ void NavEKF2_core::FuseVelPosNED()
             velTestRatio = innovVelSumSq / (varVelSum * sq(MAX(0.01f * (float)frontend->_gpsVelInnovGate, 1.0f)));
             // fail if the ratio is greater than 1
             velHealth = ((velTestRatio < 1.0f)  || badIMUdata);
-            // declare a timeout if we have not fused velocity data for too long or not aiding
-            velTimeout = (((imuSampleTime_ms - lastVelPassTime_ms) > gpsRetryTime) || PV_AidingMode == AID_NONE);
             // use velocity data if healthy, timed out, or in constant position mode
             if (velHealth || velTimeout) {
                 velHealth = true;
@@ -494,7 +485,6 @@ void NavEKF2_core::FuseVelPosNED()
                 // if timed out, reset the height
                 if (hgtTimeout) {
                     ResetHeight();
-                    hgtTimeout = false;
                 }
 
                 // If we have got this far then declare the height data as healthy and reset the timeout counter

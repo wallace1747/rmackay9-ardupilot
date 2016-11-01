@@ -121,11 +121,10 @@ void NavEKF2_core::InitialiseVariables()
     prevBetaStep_ms = imuSampleTime_ms;
     lastMagUpdate_us = 0;
     lastBaroReceived_ms = imuSampleTime_ms;
-    lastVelPassTime_ms = imuSampleTime_ms;
-    lastPosPassTime_ms = imuSampleTime_ms;
-    lastRngBcnPassTime_ms = imuSampleTime_ms;
-    lastHgtPassTime_ms = imuSampleTime_ms;
-    lastTasPassTime_ms = imuSampleTime_ms;
+    lastVelPassTime_ms = 0;
+    lastPosPassTime_ms = 0;
+    lastHgtPassTime_ms = 0;
+    lastTasPassTime_ms = 0;
     lastSynthYawTime_ms = imuSampleTime_ms;
     lastTimeGpsReceived_ms = 0;
     secondLastGpsTime_ms = 0;
@@ -134,7 +133,7 @@ void NavEKF2_core::InitialiseVariables()
     flowValidMeaTime_ms = imuSampleTime_ms;
     rngValidMeaTime_ms = imuSampleTime_ms;
     flowMeaTime_ms = 0;
-    prevFlowFuseTime_ms = imuSampleTime_ms;
+    prevFlowFuseTime_ms = 0;
     gndHgtValidTime_ms = 0;
     ekfStartTime_ms = imuSampleTime_ms;
     lastGpsVelFail_ms = 0;

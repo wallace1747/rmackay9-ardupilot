@@ -363,9 +363,9 @@ private:
     const float gpsPosVarAccScale;      // Scale factor applied to horizontal position measurement variance due to manoeuvre acceleration
     const uint16_t magDelay_ms;         // Magnetometer measurement delay (msec)
     const uint16_t tasDelay_ms;         // Airspeed measurement delay (msec)
-    const uint16_t gpsRetryTimeUseTAS_ms;  // GPS retry time with airspeed measurements (msec)
-    const uint16_t gpsRetryTimeNoTAS_ms;   // GPS retry time without airspeed measurements (msec)
-    const uint16_t gpsFailTimeWithFlow_ms; // If we have no GPs for longer than this and we have optical flow, then we will switch across to using optical flow (msec)
+    const uint16_t tiltDriftTimeMax_ms;    // Maximum number of ms allowed without any form of tilt aiding (GPS, flow, TAS, etc)
+    const uint16_t posRetryTimeUseVel_ms;  // Position aiding retry time with velocity measurements (msec)
+    const uint16_t posRetryTimeNoVel_ms;   // Position aiding retry time without velocity measurements (msec)
     const uint16_t hgtRetryTimeMode0_ms;   // Height retry time with vertical velocity measurement (msec)
     const uint16_t hgtRetryTimeMode12_ms;  // Height retry time without vertical velocity measurement (msec)
     const uint16_t tasRetryTime_ms;     // True airspeed timeout and retry interval (msec)

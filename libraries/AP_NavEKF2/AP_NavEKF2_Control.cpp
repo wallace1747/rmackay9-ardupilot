@@ -186,39 +186,71 @@ void NavEKF2_core::setAidingMode()
              PV_AidingMode = AID_NONE;
          }
      } else if (PV_AidingMode == AID_ABSOLUTE) {
-         // check if we can use opticalflow as a backup
-         bool optFlowBackupAvailable = (flowDataValid && !hgtTimeout);
+         // Find the minimum time without data required to trigger any check
+         uint16_t minTestTime_ms = MIN(frontend->tiltDriftTimeMax_ms, MIN(frontend->posRetryTimeNoVel_ms,frontend->posRetryTimeUseVel_ms));
 
-         // Set GPS time-out threshold depending on whether we have an airspeed sensor to constrain drift
-         uint16_t gpsRetryTimeout_ms = useAirspeed() ? frontend->gpsRetryTimeUseTAS_ms : frontend->gpsRetryTimeNoTAS_ms;
+         // Check if optical flow data is being used
+         bool optFlowUsed = (imuSampleTime_ms - prevFlowFuseTime_ms > minTestTime_ms);
 
-         // Set the time that copters will fly without a GPS lock before failing the GPS and switching to a non GPS mode
-         uint16_t gpsFailTimeout_ms = optFlowBackupAvailable ? frontend->gpsFailTimeWithFlow_ms : gpsRetryTimeout_ms;
+         // Check if airspeed data is being used
+         bool airSpdUsed = (imuSampleTime_ms - lastTasPassTime_ms > minTestTime_ms);
 
-         // If we haven't received GPS data for a while and we are using it for aiding, then declare the position and velocity data as being timed out
-         if (imuSampleTime_ms - lastTimeGpsReceived_ms > gpsFailTimeout_ms) {
+         // Check if range beacon data is being used
+         bool rngBcnUsed = (imuSampleTime_ms - lastRngBcnPassTime_ms > minTestTime_ms);
 
-             // Let other processes know that GPS is not available and that a timeout has occurred
+         // Check if GPS is being used
+         bool gpsPosUsed = (imuSampleTime_ms - lastPosPassTime_ms > minTestTime_ms);
+         bool gpsVelUsed = (imuSampleTime_ms - lastVelPassTime_ms > minTestTime_ms);
+
+         // Check if attitude drift has been constrained by a measurement source
+         bool attAiding = gpsPosUsed || gpsVelUsed || optFlowUsed || airSpdUsed | rngBcnUsed;
+
+         // check if velocity drift has been constrained by a measurement source
+         bool velAiding = gpsVelUsed || airSpdUsed || optFlowUsed;
+
+         // check if position drift has been constrained by a measurement source
+         bool posAiding = gpsPosUsed || rngBcnUsed;
+
+         // Check if the loss of attitude aiding has become critical
+         bool attAidLossCritical = false;
+         if (!attAiding) {
+             attAidLossCritical = (imuSampleTime_ms - prevFlowFuseTime_ms > frontend->tiltDriftTimeMax_ms) &&
+                    (imuSampleTime_ms - lastTasPassTime_ms > frontend->tiltDriftTimeMax_ms) &&
+                    (imuSampleTime_ms - lastRngBcnPassTime_ms > frontend->tiltDriftTimeMax_ms) &&
+                    (imuSampleTime_ms - lastPosPassTime_ms > frontend->tiltDriftTimeMax_ms) &&
+                    (imuSampleTime_ms - lastVelPassTime_ms > frontend->tiltDriftTimeMax_ms);
+         }
+
+         // Check if the loss of position accuracy has become critical
+         bool posAidLossCritical = false;
+         if (!posAiding ) {
+             uint16_t maxLossTime_ms;
+             if (!velAiding) {
+                 maxLossTime_ms = frontend->posRetryTimeNoVel_ms;
+             } else {
+                 maxLossTime_ms = frontend->posRetryTimeUseVel_ms;
+             }
+             posAidLossCritical = (imuSampleTime_ms - lastRngBcnPassTime_ms > maxLossTime_ms) &&
+                    (imuSampleTime_ms - lastPosPassTime_ms > maxLossTime_ms) &&
+                    (imuSampleTime_ms - lastVelPassTime_ms > maxLossTime_ms);
+         }
+
+         if (attAidLossCritical) {
+             // if the loss of attitude data is critical, then put the filter into a constant position mode
+             PV_AidingMode = AID_NONE;
              posTimeout = true;
              velTimeout = true;
+             rngBcnTimeout = true;
+             tasTimeout = true;
              gpsNotAvailable = true;
-
-             // If we are totally reliant on GPS for navigation, then we need to switch to a non-GPS mode of operation
-             // If we don't have airspeed or sideslip assumption or optical flow to constrain drift, then go into constant position mode.
-             // If we can do optical flow nav (valid flow data and height above ground estimate), then go into flow nav mode.
-             if (!useAirspeed() && !assume_zero_sideslip()) {
-                 if (optFlowBackupAvailable) {
-                     // attempt optical flow navigation
-                     PV_AidingMode = AID_RELATIVE;
-                 } else {
-                     // put the filter into constant position mode
-                     PV_AidingMode = AID_NONE;
-                 }
-             }
-         } else if (gpsInhibit) {
-             // put the filter into constant position mode in response to an exernal request
-             PV_AidingMode = AID_NONE;
+         } else if (posAidLossCritical) {
+             // if the loss of position is critical, declare all sources of position aiding as being timed out
+             posTimeout = true;
+             velTimeout = true;
+             rngBcnTimeout = true;
+             gpsNotAvailable = true;
          }
+
      }
 
     // check to see if we are starting or stopping aiding and set states and modes as required
