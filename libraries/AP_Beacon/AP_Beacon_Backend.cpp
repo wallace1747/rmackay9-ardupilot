@@ -22,7 +22,7 @@
   base class constructor. 
   This incorporates initialisation as well.
 */
-AP_Beacon_Backend::AP_Beacon_Backend(AP_Beacon &frontend, AP_SerialManager &serial_manager) :
+AP_Beacon_Backend::AP_Beacon_Backend(AP_Beacon &frontend) :
     _frontend(frontend)
 {
 }

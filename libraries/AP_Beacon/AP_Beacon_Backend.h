@@ -24,7 +24,7 @@ class AP_Beacon_Backend
 {
 public:
     // constructor. This incorporates initialisation as well.
-	AP_Beacon_Backend(AP_Beacon &frontend, AP_SerialManager &serial_manager);
+	AP_Beacon_Backend(AP_Beacon &frontend);
 
 	// return true if sensor is basically healthy (we are receiving data)
     virtual bool healthy() = 0;
@@ -41,6 +41,10 @@ public:
     // configure beacon's position in meters from origin
     void set_beacon_position(uint8_t beacon_instance, const Vector3f& pos);
 
+    float get_beacon_origin_lat(void) const { return _frontend.origin_lat; }
+    float get_beacon_origin_lon(void) const { return _frontend.origin_lon; }
+    float get_beacon_origin_alt(void) const { return _frontend.origin_alt; }
+    
 protected:
 
     // references

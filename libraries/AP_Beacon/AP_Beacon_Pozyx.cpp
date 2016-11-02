@@ -23,7 +23,7 @@ extern const AP_HAL::HAL& hal;
 
 // constructor
 AP_Beacon_Pozyx::AP_Beacon_Pozyx(AP_Beacon &frontend, AP_SerialManager &serial_manager) :
-    AP_Beacon_Backend(frontend, serial_manager),
+    AP_Beacon_Backend(frontend),
     linebuf_len(0)
 {
     uart = serial_manager.find_serial(AP_SerialManager::SerialProtocol_Beacon, 0);
