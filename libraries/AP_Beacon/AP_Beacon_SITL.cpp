@@ -24,7 +24,7 @@
 extern const AP_HAL::HAL& hal;
 
 #define NUM_BEACONS 4
-#define ORIGIN_DISTANCE 5
+#define ORIGIN_DISTANCE 10
 
 // constructor
 AP_Beacon_SITL::AP_Beacon_SITL(AP_Beacon &frontend) :
@@ -82,9 +82,10 @@ void AP_Beacon_SITL::update(void)
 
     Vector3f veh_pos3d(veh_diff.x, veh_diff.y, (current_loc.alt - origin.alt)*1.0e-2);
     Vector3f beac_pos3d(beac_diff.x, beac_diff.y, (beacon_loc.alt - origin.alt)*1.0e-2);
-    
+    Vector3f beac_veh_offset = veh_pos3d - beac_pos3d;
+
     set_beacon_position(beacon_id, beac_pos3d);
-    set_beacon_distance(beacon_id, beac_pos3d.length());
+    set_beacon_distance(beacon_id, beac_veh_offset.length());
     set_vehicle_position_ned(veh_pos3d, 0.5f);
     last_update_ms = now;
 }
