@@ -17,6 +17,7 @@
 #include "AP_Beacon.h"
 #include "AP_Beacon_Backend.h"
 #include "AP_Beacon_Pozyx.h"
+#include "AP_Beacon_SITL.h"
 
 extern const AP_HAL::HAL &hal;
 
@@ -78,6 +79,11 @@ void AP_Beacon::init(void)
     if (_type == AP_BeaconType_Pozyx) {
         _driver = new AP_Beacon_Pozyx(*this, serial_manager);
     }
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (_type == AP_BeaconType_SITL) {
+        _driver = new AP_Beacon_SITL(*this);
+    }
+#endif
 }
 
 // return true if beacon feature is enabled
