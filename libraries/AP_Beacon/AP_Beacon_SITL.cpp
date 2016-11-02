@@ -44,6 +44,7 @@ bool AP_Beacon_SITL::healthy()
 void AP_Beacon_SITL::update(void)
 {
     uint8_t beacon_id = (next_beacon+1) % NUM_BEACONS;
+    next_beacon = beacon_id;
 
     Location origin;
     origin.lat = get_beacon_origin_lat() * 1.0e7;
