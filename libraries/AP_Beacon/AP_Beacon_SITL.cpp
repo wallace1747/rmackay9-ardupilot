@@ -43,15 +43,13 @@ bool AP_Beacon_SITL::healthy()
 // update the state of the sensor
 void AP_Beacon_SITL::update(void)
 {
-    static uint8_t counter = 0;
-    counter++;
-    if (counter < 4) {
+    uint32_t now = AP_HAL::millis();
+    if (now - last_update_ms < 10) {
         return;
     }
-    counter = 0;
 
-    uint8_t beacon_id = (next_beacon+1) % NUM_BEACONS;
-    next_beacon = beacon_id;
+    uint8_t beacon_id = next_beacon;
+    next_beacon = (next_beacon+1) % NUM_BEACONS;
 
     Location origin;
     origin.lat = get_beacon_origin_lat() * 1.0e7;
@@ -79,14 +77,16 @@ void AP_Beacon_SITL::update(void)
     current_loc.lng = sitl->state.longitude * 1.0e7;
     current_loc.alt = sitl->state.altitude * 1.0e2;
 
-    Vector2f loc_diff  = location_diff(beacon_loc, current_loc);
     Vector2f beac_diff = location_diff(origin, beacon_loc);
     Vector2f veh_diff = location_diff(origin, current_loc);
+
+    Vector3f veh_pos3d(veh_diff.x, veh_diff.y, (current_loc.alt - origin.alt)*1.0e-2);
+    Vector3f beac_pos3d(beac_diff.x, beac_diff.y, (beacon_loc.alt - origin.alt)*1.0e-2);
     
-    set_beacon_position(beacon_id, Vector3f(beac_diff.x, beac_diff.y, (beacon_loc.alt - origin.alt)*1.0e-2));
-    set_beacon_distance(beacon_id, loc_diff.length());
-    set_vehicle_position_ned(Vector3f(veh_diff.x, veh_diff.y, (current_loc.alt - origin.alt)*1.0e-2), 0.5f);
-    last_update_ms = AP_HAL::millis();
+    set_beacon_position(beacon_id, beac_pos3d);
+    set_beacon_distance(beacon_id, beac_pos3d.length());
+    set_vehicle_position_ned(veh_pos3d, 0.5f);
+    last_update_ms = now;
 }
 
 #endif // CONFIG_HAL_BOARD
