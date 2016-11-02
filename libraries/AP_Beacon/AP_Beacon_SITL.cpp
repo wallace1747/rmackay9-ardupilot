@@ -43,6 +43,13 @@ bool AP_Beacon_SITL::healthy()
 // update the state of the sensor
 void AP_Beacon_SITL::update(void)
 {
+    static uint8_t counter = 0;
+    counter++;
+    if (counter < 4) {
+        return;
+    }
+    counter = 0;
+
     uint8_t beacon_id = (next_beacon+1) % NUM_BEACONS;
     next_beacon = beacon_id;
 
