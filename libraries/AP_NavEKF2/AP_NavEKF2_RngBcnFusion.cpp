@@ -129,7 +129,7 @@ void NavEKF2_core::FuseRngBcn()
 
             // correct the state vector
             for (uint8_t j= 0; j<=stateIndexLim; j++) {
-                statesArray[j] = statesArray[j] - Kfusion[j] * innovVtas;
+                statesArray[j] = statesArray[j] - Kfusion[j] * innovRngBcn;
             }
             stateStruct.quat.normalize();
 
@@ -137,22 +137,22 @@ void NavEKF2_core::FuseRngBcn()
             // take advantage of the empty columns in KH to reduce the
             // number of operations
             for (unsigned i = 0; i<=stateIndexLim; i++) {
-                for (unsigned j = 0; j<=6; j++) {
+                for (unsigned j = 0; j<=5; j++) {
                     KH[i][j] = 0.0f;
                 }
-                for (unsigned j = 7; j<=9; j++) {
+                for (unsigned j = 6; j<=8; j++) {
                     KH[i][j] = Kfusion[i] * H_BCN[j];
                 }
-                for (unsigned j = 10; j<=23; j++) {
+                for (unsigned j = 9; j<=23; j++) {
                     KH[i][j] = 0.0f;
                 }
             }
             for (unsigned j = 0; j<=stateIndexLim; j++) {
                 for (unsigned i = 0; i<=stateIndexLim; i++) {
                     ftype res = 0;
+                    res += KH[i][6] * P[6][j];
                     res += KH[i][7] * P[7][j];
                     res += KH[i][8] * P[8][j];
-                    res += KH[i][9] * P[9][j];
                     KHP[i][j] = res;
                 }
             }
