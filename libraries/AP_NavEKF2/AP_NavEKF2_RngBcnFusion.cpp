@@ -58,20 +58,39 @@ void NavEKF2_core::FuseRngBcn()
     if (rngPred > 0.1f)
     {
         // calculate observation jacobians
-        float SH_BCN = 1.0f /rngPred;
         float H_BCN[24] = {};
-        H_BCN[6] = -SH_BCN*(bcn_pn - pn);
-        H_BCN[7] = -SH_BCN*(bcn_pe - pe);
-        H_BCN[8] = -SH_BCN*(bcn_pd - pd);
+        float t2 = bcn_pd-pd;
+        float t3 = bcn_pe-pe;
+        float t4 = bcn_pn-pn;
+        float t5 = t2*t2;
+        float t6 = t3*t3;
+        float t7 = t4*t4;
+        float t8 = t5+t6+t7;
+        float t9 = 1.0f/sqrt(t8);
+        H_BCN[6] = -t4*t9;
+        H_BCN[7] = -t3*t9;
+        H_BCN[8] = -t2*t9;
 
         // calculate Kalman gains
-        float SK_BCN[4];
-        varInnovRngBcn = (R_BCN + SH_BCN*(bcn_pd - pd)*(P[8][8]*SH_BCN*(bcn_pd - pd) + P[7][8]*SH_BCN*(bcn_pe - pe) + P[6][8]*SH_BCN*(bcn_pn - pn)) + SH_BCN*(bcn_pe - pe)*(P[8][7]*SH_BCN*(bcn_pd - pd) + P[7][7]*SH_BCN*(bcn_pe - pe) + P[6][7]*SH_BCN*(bcn_pn - pn)) + SH_BCN*(bcn_pn - pn)*(P[8][6]*SH_BCN*(bcn_pd - pd) + P[7][6]*SH_BCN*(bcn_pe - pe) + P[6][6]*SH_BCN*(bcn_pn - pn)));
+        float t10 = P[8][8]*H_BCN[8];
+        float t11 = P[7][8]*H_BCN[7];
+        float t12 = P[6][8]*H_BCN[6];
+        float t13 = t10+t11+t12;
+        float t14 = t2*t9*t13;
+        float t15 = P[8][7]*H_BCN[8];
+        float t16 = P[7][7]*H_BCN[7];
+        float t17 = P[6][7]*H_BCN[6];
+        float t18 = t15+t16+t17;
+        float t19 = t3*t9*t18;
+        float t20 = P[8][6]*H_BCN[8];
+        float t21 = P[7][6]*H_BCN[7];
+        float t22 = P[6][6]*H_BCN[6];
+        float t23 = t20+t21+t22;
+        float t24 = t4*t9*t23;
+        varInnovRngBcn = R_BCN+t14+t19+t24;
+        float t26;
         if (varInnovRngBcn >= R_BCN) {
-            SK_BCN[0] = 1.0f / varInnovRngBcn;
-            SK_BCN[1] = bcn_pn - pn;
-            SK_BCN[2] = bcn_pe - pe;
-            SK_BCN[3] = bcn_pd - pd;
+            t26 = 1.0/varInnovRngBcn;
             faultStatus.bad_rngbcn = false;
         } else {
             // the calculation is badly conditioned, so we cannot perform fusion on this step
@@ -80,36 +99,20 @@ void NavEKF2_core::FuseRngBcn()
             faultStatus.bad_rngbcn = true;
             return;
         }
-
-        Kfusion[0] = -SK_BCN[0]*(P[0][6]*SK_BCN[1]*SK_BCN[0] + P[0][7]*SK_BCN[2]*SK_BCN[0] + P[0][8]*SK_BCN[3]*SK_BCN[0]);
-        Kfusion[1] = -SK_BCN[0]*(P[1][6]*SK_BCN[1]*SK_BCN[0] + P[1][7]*SK_BCN[2]*SK_BCN[0] + P[1][8]*SK_BCN[3]*SK_BCN[0]);
-        Kfusion[2] = -SK_BCN[0]*(P[2][6]*SK_BCN[1]*SK_BCN[0] + P[2][7]*SK_BCN[2]*SK_BCN[0] + P[2][8]*SK_BCN[3]*SK_BCN[0]);
-        Kfusion[3] = -SK_BCN[0]*(P[3][6]*SK_BCN[1]*SK_BCN[0] + P[3][7]*SK_BCN[2]*SK_BCN[0] + P[3][8]*SK_BCN[3]*SK_BCN[0]);
-        Kfusion[4] = -SK_BCN[0]*(P[4][6]*SK_BCN[1]*SK_BCN[0] + P[4][7]*SK_BCN[2]*SK_BCN[0] + P[4][8]*SK_BCN[3]*SK_BCN[0]);
-        Kfusion[5] = -SK_BCN[0]*(P[5][6]*SK_BCN[1]*SK_BCN[0] + P[5][7]*SK_BCN[2]*SK_BCN[0] + P[5][8]*SK_BCN[3]*SK_BCN[0]);
-        Kfusion[6] = -SK_BCN[0]*(P[6][6]*SK_BCN[1]*SK_BCN[0] + P[6][7]*SK_BCN[2]*SK_BCN[0] + P[6][8]*SK_BCN[3]*SK_BCN[0]);
-        Kfusion[7] = -SK_BCN[0]*(P[7][6]*SK_BCN[1]*SK_BCN[0] + P[7][7]*SK_BCN[2]*SK_BCN[0] + P[7][8]*SK_BCN[3]*SK_BCN[0]);
-        Kfusion[8] = -SK_BCN[0]*(P[8][6]*SK_BCN[1]*SK_BCN[0] + P[8][7]*SK_BCN[2]*SK_BCN[0] + P[8][8]*SK_BCN[3]*SK_BCN[0]);
-        Kfusion[9] = -SK_BCN[0]*(P[9][6]*SK_BCN[1]*SK_BCN[0] + P[9][7]*SK_BCN[2]*SK_BCN[0] + P[9][8]*SK_BCN[3]*SK_BCN[0]);
-        Kfusion[10] = -SK_BCN[0]*(P[10][6]*SK_BCN[1]*SK_BCN[0] + P[10][7]*SK_BCN[2]*SK_BCN[0] + P[10][8]*SK_BCN[3]*SK_BCN[0]);
-        Kfusion[11] = -SK_BCN[0]*(P[11][6]*SK_BCN[1]*SK_BCN[0] + P[11][7]*SK_BCN[2]*SK_BCN[0] + P[11][8]*SK_BCN[3]*SK_BCN[0]);
-        Kfusion[12] = -SK_BCN[0]*(P[12][6]*SK_BCN[1]*SK_BCN[0] + P[12][7]*SK_BCN[2]*SK_BCN[0] + P[12][8]*SK_BCN[3]*SK_BCN[0]);
-        Kfusion[13] = -SK_BCN[0]*(P[13][6]*SK_BCN[1]*SK_BCN[0] + P[13][7]*SK_BCN[2]*SK_BCN[0] + P[13][8]*SK_BCN[3]*SK_BCN[0]);
-        Kfusion[14] = -SK_BCN[0]*(P[14][6]*SK_BCN[1]*SK_BCN[0] + P[14][7]*SK_BCN[2]*SK_BCN[0] + P[14][8]*SK_BCN[3]*SK_BCN[0]);
-        Kfusion[15] = -SK_BCN[0]*(P[15][6]*SK_BCN[1]*SK_BCN[0] + P[15][7]*SK_BCN[2]*SK_BCN[0] + P[15][8]*SK_BCN[3]*SK_BCN[0]);
-        Kfusion[22] = -SK_BCN[0]*(P[22][6]*SK_BCN[1]*SK_BCN[0] + P[22][7]*SK_BCN[2]*SK_BCN[0] + P[22][8]*SK_BCN[3]*SK_BCN[0]);
-        Kfusion[23] = -SK_BCN[0]*(P[23][6]*SK_BCN[1]*SK_BCN[0] + P[23][7]*SK_BCN[2]*SK_BCN[0] + P[23][8]*SK_BCN[3]*SK_BCN[0]);
+        for (unsigned j = 0; j<=15; j++) {
+            Kfusion[j] = t26*(P[j][6]*H_BCN[6]+P[j][7]*H_BCN[7]+P[j][8]*H_BCN[8]);
+        }
         if (!inhibitMagStates) {
-            Kfusion[16] = -SK_BCN[0]*(P[16][6]*SK_BCN[1]*SK_BCN[0] + P[16][7]*SK_BCN[2]*SK_BCN[0] + P[16][8]*SK_BCN[3]*SK_BCN[0]);
-            Kfusion[17] = -SK_BCN[0]*(P[17][6]*SK_BCN[1]*SK_BCN[0] + P[17][7]*SK_BCN[2]*SK_BCN[0] + P[17][8]*SK_BCN[3]*SK_BCN[0]);
-            Kfusion[18] = -SK_BCN[0]*(P[18][6]*SK_BCN[1]*SK_BCN[0] + P[18][7]*SK_BCN[2]*SK_BCN[0] + P[18][8]*SK_BCN[3]*SK_BCN[0]);
-            Kfusion[19] = -SK_BCN[0]*(P[19][6]*SK_BCN[1]*SK_BCN[0] + P[19][7]*SK_BCN[2]*SK_BCN[0] + P[19][8]*SK_BCN[3]*SK_BCN[0]);
-            Kfusion[20] = -SK_BCN[0]*(P[20][6]*SK_BCN[1]*SK_BCN[0] + P[20][7]*SK_BCN[2]*SK_BCN[0] + P[20][8]*SK_BCN[3]*SK_BCN[0]);
-            Kfusion[21] = -SK_BCN[0]*(P[21][6]*SK_BCN[1]*SK_BCN[0] + P[21][7]*SK_BCN[2]*SK_BCN[0] + P[21][8]*SK_BCN[3]*SK_BCN[0]);
+            for (unsigned j = 16; j<=21; j++) {
+                Kfusion[j] = t26*(P[j][6]*H_BCN[6]+P[j][7]*H_BCN[7]+P[j][8]*H_BCN[8]);
+            }
         } else {
             for (uint8_t i=16; i<=21; i++) {
                 Kfusion[i] = 0.0f;
             }
+        }
+        for (unsigned j = 22; j<=23; j++) {
+            Kfusion[j] = t26*(P[j][6]*H_BCN[6]+P[j][7]*H_BCN[7]+P[j][8]*H_BCN[8]);
         }
 
         // calculate measurement innovation
@@ -188,13 +191,10 @@ void NavEKF2_core::FuseRngBcn()
             } else {
                 // record bad fusion
                 faultStatus.bad_rngbcn = true;
+
             }
         }
     }
-
-    // force the covariance matrix to me symmetrical and limit the variances to prevent ill-condiioning.
-    ForceSymmetry();
-    ConstrainVariances();
 }
 
 #endif // HAL_CPU_CLASS
