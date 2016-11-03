@@ -34,10 +34,18 @@ void NavEKF2_core::ResetVelocity(void)
     } else {
         // reset horizontal velocity states to the GPS velocity if available
         if (imuSampleTime_ms - lastTimeGpsReceived_ms < 250) {
-            stateStruct.velocity.x  = gpsDataNew.vel.x; // north velocity from blended accel data
-            stateStruct.velocity.y  = gpsDataNew.vel.y; // east velocity from blended accel data
+            stateStruct.velocity.x  = gpsDataNew.vel.x;
+            stateStruct.velocity.y  = gpsDataNew.vel.y;
             // set the variances using the reported GPS speed accuracy
             P[4][4] = P[3][3] = sq(MAX(frontend->_gpsHorizVelNoise,gpsSpdAccuracy));
+            // clear the timeout flags and counters
+            velTimeout = false;
+            lastVelPassTime_ms = imuSampleTime_ms;
+        } else {
+            stateStruct.velocity.x  = 0.0f;
+            stateStruct.velocity.y  = 0.0f;
+            // set the variances using the likely speed range
+            P[4][4] = P[3][3] = sq(25.0f);
             // clear the timeout flags and counters
             velTimeout = false;
             lastVelPassTime_ms = imuSampleTime_ms;
