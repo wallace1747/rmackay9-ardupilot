@@ -46,7 +46,7 @@ void AP_Beacon_Pozyx::update(void)
     counter++;
     if (counter > 200) {
         counter = 0;
-        ::printf("b\n");
+        //::printf("b\n");
     }
 
     if (uart == nullptr) {
