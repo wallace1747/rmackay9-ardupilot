@@ -68,7 +68,7 @@ void AP_Beacon_SITL::update(void)
         location_offset(beacon_loc, -ORIGIN_DISTANCE, ORIGIN_DISTANCE);
         break;
     case 3:
-        location_offset(beacon_loc, -ORIGIN_DISTANCE, ORIGIN_DISTANCE);
+        location_offset(beacon_loc, -ORIGIN_DISTANCE, -ORIGIN_DISTANCE);
         break;
     }
 
