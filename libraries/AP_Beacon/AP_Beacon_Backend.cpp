@@ -27,12 +27,12 @@ AP_Beacon_Backend::AP_Beacon_Backend(AP_Beacon &frontend) :
 {
 }
 
-// set vehicle position
-void AP_Beacon_Backend::set_vehicle_position_ned(const Vector3f& pos, float accuracy_estimate)
+// set vehicle position, pos should be in the beacon's local frame
+void AP_Beacon_Backend::set_vehicle_position(const Vector3f& pos, float accuracy_estimate)
 {
     _frontend.veh_pos_update_ms = AP_HAL::millis();
-    _frontend.veh_pos_ned = pos;
     _frontend.veh_pos_accuracy = accuracy_estimate;
+    _frontend.veh_pos_ned = correct_for_orient_yaw(pos);
 
     // debug
     ::printf("vehicle x:%4.2f y:%4.2f z:%4.2f error:%4.2f\n", (double)pos.x, (double)pos.y, (double)pos.z, (double)accuracy_estimate);
@@ -59,6 +59,7 @@ void AP_Beacon_Backend::set_beacon_distance(uint8_t beacon_instance, float dista
 }
 
 // configure beacon's position in meters from origin
+// pos should be in the beacon's local frame
 void AP_Beacon_Backend::set_beacon_position(uint8_t beacon_instance, const Vector3f& pos)
 {
     // sanity check instance
@@ -73,6 +74,32 @@ void AP_Beacon_Backend::set_beacon_position(uint8_t beacon_instance, const Vecto
 
     ::printf("beacon %d x:%4.2f y:%4.2f z:%4.2f\n", (int)beacon_instance, (double)pos.x, (double)pos.y, (double)pos.z);
 
-    // set position
-    _frontend.beacon_state[beacon_instance].position = pos;
+    // set position after correcting yaw
+    _frontend.beacon_state[beacon_instance].position = correct_for_orient_yaw(pos);
+}
+
+// rotate vector to correct for beacon system yaw orientation
+Vector3f AP_Beacon_Backend::correct_for_orient_yaw(const Vector3f &vector)
+{
+    // exit immediately if no correction
+    if (_frontend.orient_yaw == 0) {
+        return vector;
+    }
+
+    // check for change in parameter value and update constants
+    if (orient_yaw_deg != _frontend.orient_yaw) {
+        _frontend.orient_yaw = wrap_180(_frontend.orient_yaw.get());
+
+        // calculate rotation constants
+        orient_yaw_deg = _frontend.orient_yaw;
+        orient_cos_yaw = cosf(radians(orient_yaw_deg));
+        orient_sin_yaw = sinf(radians(orient_yaw_deg));
+    }
+
+    // rotate x,y by -orient_yaw
+    Vector3f vec_rotated;
+    vec_rotated.x = vector.x*orient_cos_yaw - vector.y*orient_sin_yaw;
+    vec_rotated.y = vector.x*orient_sin_yaw + vector.y*orient_cos_yaw;
+    vec_rotated.z = vector.z;
+    return vec_rotated;
 }

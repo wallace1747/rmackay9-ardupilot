@@ -58,6 +58,15 @@ const AP_Param::GroupInfo AP_Beacon::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_ALT", 3, AP_Beacon, origin_alt, 0),
 
+    // @Param: _ORIENT_YAW
+    // @DisplayName: Beacon systems rotation from north in degrees
+    // @Description: Beacon systems rotation from north in degrees
+    // @Units: degrees
+    // @Increment: 1
+    // @Range: -180 +180
+    // @User: Advanced
+    AP_GROUPINFO("_ORIENT_YAW", 4, AP_Beacon, orient_yaw, 0),
+
     AP_GROUPEND
 };
 
