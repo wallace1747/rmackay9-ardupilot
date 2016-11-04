@@ -98,6 +98,7 @@ private:
     AP_Float origin_lat;
     AP_Float origin_lon;
     AP_Float origin_alt;
+    AP_Int16 orient_yaw;
 
     // external references
     AP_Beacon_Backend *_driver;

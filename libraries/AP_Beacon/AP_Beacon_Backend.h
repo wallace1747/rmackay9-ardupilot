@@ -32,13 +32,14 @@ public:
     // update
     virtual void update() = 0;
 
-    // set vehicle position
-    void set_vehicle_position_ned(const Vector3f& pos, float accuracy_estimate);
+    // set vehicle position, pos should be in the beacon's local frame
+    void set_vehicle_position(const Vector3f& pos, float accuracy_estimate);
 
     // set individual beacon distance in meters
     void set_beacon_distance(uint8_t beacon_instance, float distance);
 
     // configure beacon's position in meters from origin
+    // pos should be in the beacon's local frame
     void set_beacon_position(uint8_t beacon_instance, const Vector3f& pos);
 
     float get_beacon_origin_lat(void) const { return _frontend.origin_lat; }
@@ -49,4 +50,12 @@ protected:
 
     // references
     AP_Beacon &_frontend;
+
+    // yaw correction
+    int16_t orient_yaw_deg; // cached version of orient_yaw parameter
+    float orient_cos_yaw = 0.0f;
+    float orient_sin_yaw = 1.0f;
+
+    // yaw correction methods
+    Vector3f correct_for_orient_yaw(const Vector3f &vector);
 };
