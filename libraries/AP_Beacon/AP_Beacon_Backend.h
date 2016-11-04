@@ -45,7 +45,7 @@ public:
     float get_beacon_origin_lat(void) const { return _frontend.origin_lat; }
     float get_beacon_origin_lon(void) const { return _frontend.origin_lon; }
     float get_beacon_origin_alt(void) const { return _frontend.origin_alt; }
-    
+
 protected:
 
     // references
