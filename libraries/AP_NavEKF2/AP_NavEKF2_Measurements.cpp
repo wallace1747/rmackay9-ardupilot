@@ -712,25 +712,31 @@ void NavEKF2_core::readRngBcnData()
     }
 
     // Check if the range beacon data can be used to align the vehicle position
-    if (imuSampleTime_ms - rngBcnLast3DmeasTime_ms < 250 && beaconVehiclePosErr < 1.0f) {
-        rngBcnGoodToAlign = true;
-        // Set the EKF origin and magnetic field declination if not previously set
-        if (!validOrigin) {
-            // get origin from beacon system
-            Location origin_loc;
-            beacon->get_origin(origin_loc);
-            setOriginLLH(origin_loc);
+    if (imuSampleTime_ms - rngBcnLast3DmeasTime_ms < 250 && beaconVehiclePosErr < 1.0f && rngBcnAlignmentCompleted) {
+        // check for consistency between the position reported by the beacon and the position from the 3-State alignment filter
+        float posDiffSq = sq(receiverPos.x - beaconVehiclePosNED.x) + sq(receiverPos.y - beaconVehiclePosNED.y);
+        float posDiffVar = sq(beaconVehiclePosErr) + receiverPosCov[0][0] + receiverPosCov[1][1];
+        if (posDiffSq < 9.0f*posDiffVar) {
+            rngBcnGoodToAlign = true;
+            // Set the EKF origin and magnetic field declination if not previously set
+            if (!validOrigin && PV_AidingMode != AID_ABSOLUTE) {
+                // get origin from beacon system
+                Location origin_loc;
+                beacon->get_origin(origin_loc);
+                setOriginLLH(origin_loc);
 
-            // set the NE earth magnetic field states using the published declination
-            // and set the corresponding variances and covariances
-            alignMagStateDeclination();
+                // set the NE earth magnetic field states using the published declination
+                // and set the corresponding variances and covariances
+                alignMagStateDeclination();
 
-            // Set the height of the NED origin to ‘height of baro height datum relative to GPS height datum'
-            EKF_origin.alt = origin_loc.alt - baroDataNew.hgt;
+                // Set the height of the NED origin to ‘height of baro height datum relative to GPS height datum'
+                EKF_origin.alt = origin_loc.alt - baroDataNew.hgt;
 
-            // Set the uncertainty of the origin height
-            ekfOriginHgtVar = sq(beaconVehiclePosErr);
-
+                // Set the uncertainty of the origin height
+                ekfOriginHgtVar = sq(beaconVehiclePosErr);
+            }
+        } else {
+            rngBcnGoodToAlign = false;
         }
     } else {
         rngBcnGoodToAlign = false;

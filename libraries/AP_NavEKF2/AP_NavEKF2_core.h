@@ -453,6 +453,9 @@ private:
     // fuse range beacon measurements
     void FuseRngBcn();
 
+    // use range beaon measurements to calculate a static position
+    void FuseRngBcnStatic();
+
     // fuse magnetometer measurements
     void FuseMagnetometer();
 
@@ -972,6 +975,14 @@ private:
     uint32_t rngBcnLast3DmeasTime_ms;   // last time the beacon system returned a 3D fix (msec)
     bool rngBcnGoodToAlign;             // true when the range beacon systems 3D fix can be used to align the filter
     uint8_t lastRngBcnChecked;          // index of the last range beacon checked for data
+    Vector3f receiverPos;               // receiver NED position (m) - alignment 3 state filter
+    float receiverPosCov[3][3];         // Receiver position covariance (m^2) - alignment 3 state filter (
+    bool rngBcnAlignmentStarted;        // True when the initial position alignment using range measurements has started
+    bool rngBcnAlignmentCompleted;      // True when the initial position alignment using range measurements has finished
+    uint8_t lastBeaconIndex;            // Range beacon index last read -  used during initialisation of the 3-state filter
+    Vector3f rngBcnPosSum;              // Sum of range beacon NED position (m) - used during initialisation of the 3-state filter
+    uint8_t numBcnMeas;                 // Number of beacon measurements - used during initialisation of the 3-state filter
+    float rngSum;                       // Sum of range measurements (m) - used during initialisation of the 3-state filter
 
     // height source selection logic
     uint8_t activeHgtSource;    // integer defining active height source

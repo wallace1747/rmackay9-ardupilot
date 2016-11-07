@@ -100,10 +100,11 @@ void NavEKF2_core::ResetPosition(void)
             lastPosPassTime_ms = imuSampleTime_ms;
         } else if (imuSampleTime_ms - rngBcnLast3DmeasTime_ms < 250) {
             // use the range beacon data as a second preference
-            stateStruct.position.x = beaconVehiclePosNED.x;
-            stateStruct.position.y = beaconVehiclePosNED.y;
-            // set the variances using the beacon sensors reported variance
-            P[6][6] = P[7][7] = sq(beaconVehiclePosErr);
+            stateStruct.position.x = receiverPos.x;
+            stateStruct.position.y = receiverPos.y;
+            // set the variances from the beacon alignment filter
+            P[6][6] = receiverPosCov[0][0];
+            P[7][7] = receiverPosCov[1][1];
             // clear the timeout flags and counters
             rngBcnTimeout = false;
             lastRngBcnPassTime_ms = imuSampleTime_ms;

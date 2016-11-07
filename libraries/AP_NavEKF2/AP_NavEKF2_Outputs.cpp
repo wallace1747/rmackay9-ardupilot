@@ -241,6 +241,11 @@ bool NavEKF2_core::getPosNE(Vector2f &posNE) const
                 posNE.x = tempPosNE.x;
                 posNE.y = tempPosNE.y;
                 return false;
+            } else if (rngBcnAlignmentStarted) {
+                // If we are attempting alignment using range beacon data, then report the position
+                posNE.x = receiverPos.x;
+                posNE.y = receiverPos.y;
+                return false;
             } else {
                 // If no GPS fix is available, all we can do is provide the last known position
                 posNE.x = outputDataNew.position.x;

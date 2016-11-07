@@ -290,6 +290,14 @@ void NavEKF2_core::InitialiseVariables()
     rngBcnLast3DmeasTime_ms = 0;
     rngBcnGoodToAlign = false;
     lastRngBcnChecked = 0;
+    memset(&receiverPosCov, 0, sizeof(receiverPosCov));
+    receiverPos.zero();
+    rngBcnAlignmentStarted =  false;
+    rngBcnAlignmentCompleted = false;
+    lastBeaconIndex = 0;
+    rngBcnPosSum.zero();
+    numBcnMeas = 0;
+    rngSum = 0.0f;
 
     // zero data buffers
     storedIMU.reset();
@@ -429,10 +437,8 @@ void NavEKF2_core::CovarianceInit()
     P[22][22] = 0.0f;
     P[23][23]  = P[22][22];
 
-
     // optical flow ground height covariance
     Popt = 0.25f;
-
 }
 
 /********************************************************

@@ -22,8 +22,14 @@ void NavEKF2_core::SelectRngBcnFusion()
     readRngBcnData();
 
     // Determine if we need to fuse range beacon data on this time step
-    if (rngBcnDataToFuse && PV_AidingMode == AID_ABSOLUTE) {
-        FuseRngBcn();
+    if (rngBcnDataToFuse) {
+        if (PV_AidingMode == AID_ABSOLUTE) {
+            // Normal operating mode is to fuse the range data into the main filter
+            FuseRngBcn();
+        } else {
+            // If we aren't able to use the data in the main filter, use a simple 3-state filter to estimte position only
+            FuseRngBcnStatic();
+        }
     }
 }
 
@@ -213,4 +219,150 @@ void NavEKF2_core::FuseRngBcn()
     }
 }
 
+/*
+Use range beaon measurements to calculate a static position using a 3-state EKF algorithm.
+Algorihtm based on the following:
+https://github.com/priseborough/InertialNav/blob/master/derivations/range_beacon.m
+*/
+void NavEKF2_core::FuseRngBcnStatic()
+{
+    /*
+    The first thing to do is to check if we have started the alignment and if not, initialise the
+    states and covariance to a first guess. To do this iterate through the avilable beacons and then
+    initialise the initial position to the mean beacon position. The initial position uncertainty
+    is set to the mean range measurement.
+    */
+    if (!rngBcnAlignmentStarted) {
+        if (rngBcnDataDelayed.beacon_ID != lastBeaconIndex) {
+            rngBcnPosSum += rngBcnDataDelayed.beacon_posNED;
+            lastBeaconIndex = rngBcnDataDelayed.beacon_ID;
+            rngSum += rngBcnDataDelayed.rng;
+            numBcnMeas++;
+        }
+        if (numBcnMeas >= 100) {
+            rngBcnAlignmentStarted = true;
+            float tempVar = 1.0f / (float)numBcnMeas;
+            receiverPos = rngBcnPosSum * tempVar;
+            receiverPosCov[2][2] = receiverPosCov[1][1] = receiverPosCov[0][0] = rngSum * tempVar;
+            lastBeaconIndex  = 0;
+            numBcnMeas = 0;
+            rngBcnPosSum.zero();
+            rngSum = 0.0f;
+        }
+    }
+
+    if (rngBcnAlignmentStarted && !rngBcnAlignmentCompleted) {
+        numBcnMeas++;
+
+        // Add some process noise to the states at each time step
+        for (uint8_t i= 0; i<=2; i++) {
+            receiverPosCov[i][i] += 0.1f;
+        }
+
+        // get the estimated range measurement variance
+        const float R_RNG = sq(MAX(rngBcnDataDelayed.rngErr , 0.1f));
+
+        // calculate the observation jacobian
+        float t2 = rngBcnDataDelayed.beacon_posNED.z - receiverPos.z;
+        float t3 = rngBcnDataDelayed.beacon_posNED.y - receiverPos.y;
+        float t4 = rngBcnDataDelayed.beacon_posNED.x - receiverPos.x;
+        float t5 = t2*t2;
+        float t6 = t3*t3;
+        float t7 = t4*t4;
+        float t8 = t5+t6+t7;
+        if (t8 < 0.1f) {
+            // calculation will be badly conditioned
+            return;
+        }
+        float t9 = 1.0f/sqrt(t8);
+        float t10 = rngBcnDataDelayed.beacon_posNED.x*2.0f;
+        float t15 = receiverPos.x*2.0f;
+        float t11 = t10-t15;
+        float t12 = rngBcnDataDelayed.beacon_posNED.y*2.0f;
+        float t14 = receiverPos.y*2.0f;
+        float t13 = t12-t14;
+        float t16 = rngBcnDataDelayed.beacon_posNED.z*2.0f;
+        float t18 = receiverPos.z*2.0f;
+        float t17 = t16-t18;
+        float H_RNG[3];
+        H_RNG[0] = -t9*t11*0.5f;
+        H_RNG[1] = -t9*t13*0.5f;
+        H_RNG[2] = -t9*t17*0.5f;
+
+        // calculate the Kalman gains
+        float t19 = receiverPosCov[0][0]*t9*t11*0.5f;
+        float t20 = receiverPosCov[1][1]*t9*t13*0.5f;
+        float t21 = receiverPosCov[0][1]*t9*t11*0.5f;
+        float t22 = receiverPosCov[2][1]*t9*t17*0.5f;
+        float t23 = t20+t21+t22;
+        float t24 = t9*t13*t23*0.5f;
+        float t25 = receiverPosCov[1][2]*t9*t13*0.5f;
+        float t26 = receiverPosCov[0][2]*t9*t11*0.5f;
+        float t27 = receiverPosCov[2][2]*t9*t17*0.5f;
+        float t28 = t25+t26+t27;
+        float t29 = t9*t17*t28*0.5f;
+        float t30 = receiverPosCov[1][0]*t9*t13*0.5f;
+        float t31 = receiverPosCov[2][0]*t9*t17*0.5f;
+        float t32 = t19+t30+t31;
+        float t33 = t9*t11*t32*0.5f;
+        varInnovRngBcn = R_RNG+t24+t29+t33;
+        float t35 = 1.0f/varInnovRngBcn;
+        float K_RNG[3];
+        K_RNG[0] = -t35*(t19+receiverPosCov[0][1]*t9*t13*0.5f+receiverPosCov[0][2]*t9*t17*0.5f);
+        K_RNG[1] = -t35*(t20+receiverPosCov[1][0]*t9*t11*0.5f+receiverPosCov[1][2]*t9*t17*0.5f);
+        K_RNG[2] = -t35*(t27+receiverPosCov[2][0]*t9*t11*0.5f+receiverPosCov[2][1]*t9*t13*0.5f);
+
+        // calculate range measurement innovation
+        Vector3f deltaPosNED = receiverPos - rngBcnDataDelayed.beacon_posNED;
+        innovRngBcn = deltaPosNED.length() - rngBcnDataDelayed.rng;
+
+        // update the state
+        receiverPos.x -= K_RNG[0] * innovRngBcn;
+        receiverPos.y -= K_RNG[1] * innovRngBcn;
+        receiverPos.z -= K_RNG[2] * innovRngBcn;
+
+        // calculate the covariance correction
+        for (unsigned i = 0; i<=2; i++) {
+            for (unsigned j = 0; j<=2; j++) {
+                KH[i][j] = K_RNG[i] * H_RNG[j];
+            }
+        }
+        for (unsigned j = 0; j<=2; j++) {
+            for (unsigned i = 0; i<=2; i++) {
+                ftype res = 0;
+                res += KH[i][0] * receiverPosCov[0][j];
+                res += KH[i][1] * receiverPosCov[1][j];
+                res += KH[i][2] * receiverPosCov[2][j];
+                KHP[i][j] = res;
+            }
+        }
+        // prevent negative variances
+        for (uint8_t i= 0; i<=2; i++) {
+            if (receiverPosCov[i][i] < 0.0f) {
+                receiverPosCov[i][i] = 0.0f;
+                KHP[i][i] = 0.0f;
+            } else if (KHP[i][i] > receiverPosCov[i][i]) {
+                KHP[i][i] = receiverPosCov[i][i];
+            }
+        }
+        // apply the covariance correction
+        for (uint8_t i= 0; i<=2; i++) {
+            for (uint8_t j= 0; j<=2; j++) {
+                receiverPosCov[i][j] -= KHP[i][j];
+            }
+        }
+        // ensure the covariance matrix is symmetric
+        for (uint8_t i=1; i<=2; i++) {
+            for (uint8_t j=0; j<=i-1; j++) {
+                float temp = 0.5f*(receiverPosCov[i][j] + receiverPosCov[j][i]);
+                receiverPosCov[i][j] = temp;
+                receiverPosCov[j][i] = temp;
+            }
+        }
+
+        if (numBcnMeas >= 100) {
+            rngBcnAlignmentCompleted = true;
+        }
+    }
+}
 #endif // HAL_CPU_CLASS
