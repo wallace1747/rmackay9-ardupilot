@@ -75,7 +75,13 @@ void NavEKF2_core::FuseRngBcn()
         float t9 = 1.0f/sqrt(t8);
         H_BCN[6] = -t4*t9;
         H_BCN[7] = -t3*t9;
-        H_BCN[8] = -t2*t9;
+        // Don't allow range measurements to affect vertical states
+        // if using a different source for height aiding
+        if (activeHgtSource == HGT_SOURCE_BCN) {
+            H_BCN[8] = -t2*t9;
+        } else {
+            H_BCN[8] = 0.0f;
+        }
 
         // calculate Kalman gains
         float t10 = P[8][8]*t2*t9;
@@ -111,10 +117,17 @@ void NavEKF2_core::FuseRngBcn()
         Kfusion[2] = -t26*(P[2][6]*t4*t9+P[2][7]*t3*t9+P[2][8]*t2*t9);
         Kfusion[3] = -t26*(P[3][6]*t4*t9+P[3][7]*t3*t9+P[3][8]*t2*t9);
         Kfusion[4] = -t26*(P[4][6]*t4*t9+P[4][7]*t3*t9+P[4][8]*t2*t9);
-        Kfusion[5] = -t26*(P[5][6]*t4*t9+P[5][7]*t3*t9+P[5][8]*t2*t9);
         Kfusion[6] = -t26*(t22+P[6][7]*t3*t9+P[6][8]*t2*t9);
         Kfusion[7] = -t26*(t16+P[7][6]*t4*t9+P[7][8]*t2*t9);
-        Kfusion[8] = -t26*(t10+P[8][6]*t4*t9+P[8][7]*t3*t9);
+        // Don't allow range measurements to affect vertical states
+        // if using a different source for height aiding
+        if (activeHgtSource == HGT_SOURCE_BCN) {
+            Kfusion[5] = -t26*(P[5][6]*t4*t9+P[5][7]*t3*t9+P[5][8]*t2*t9);
+            Kfusion[8] = -t26*(t10+P[8][6]*t4*t9+P[8][7]*t3*t9);
+        } else {
+            Kfusion[5] = 0.0f;
+            Kfusion[8] = 0.0f;
+        }
         Kfusion[9] = -t26*(P[9][6]*t4*t9+P[9][7]*t3*t9+P[9][8]*t2*t9);
         Kfusion[10] = -t26*(P[10][6]*t4*t9+P[10][7]*t3*t9+P[10][8]*t2*t9);
         Kfusion[11] = -t26*(P[11][6]*t4*t9+P[11][7]*t3*t9+P[11][8]*t2*t9);
