@@ -695,7 +695,8 @@ void NavEKF2_core::readRngBcnData()
             rngBcnDataNew.beacon_posNED = beacon->beacon_position(index);
 
             // set the beacon identifier
-            rngBcnDataNew.beacon_ID = beacon->beacon_id(index);
+            // hack to work around lack of ID data during testing
+            rngBcnDataNew.beacon_ID = index;//beacon->beacon_id(index);
 
             // indicate we have new data to push to the buffer
             newDataToPush = true;
