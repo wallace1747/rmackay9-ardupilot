@@ -203,7 +203,7 @@ public:
         testRatio : innovation consistency test ratio
         beaconPosNED : beacon NED position (m)
     */
-    void getRangeBeaconDebug(uint8_t &ID, float &rng, float &innov, float &innovVar, float &testRatio, Vector3f &beaconPosNED) const;
+    void getRangeBeaconDebug(uint8_t &ID, float &rng, float &innov, float &innovVar, float &testRatio, Vector3f &beaconPosNED);
 
     // called by vehicle code to specify that a takeoff is happening
     // causes the EKF to compensate for expected barometer errors due to ground effect
@@ -983,6 +983,17 @@ private:
     Vector3f rngBcnPosSum;              // Sum of range beacon NED position (m) - used during initialisation of the 3-state filter
     uint8_t numBcnMeas;                 // Number of beacon measurements - used during initialisation of the 3-state filter
     float rngSum;                       // Sum of range measurements (m) - used during initialisation of the 3-state filter
+    uint8_t N_beacons;                  // Number of range beacons in use
+
+    // Range Beacon Fusion Debug Reporting
+    uint8_t rngBcnFuseDataReportIndex;// index of range beacon fusion data last reported
+    struct {
+        float rng;          // measured range to beacon (m)
+        float innov;        // range innovation (m)
+        float innovVar;     // innovation variance (m^2)
+        float testRatio;    // innovation consistency test ratio
+        Vector3f beaconPosNED; // beacon NED position
+    } rngBcnFusionReport[10];
 
     // height source selection logic
     uint8_t activeHgtSource;    // integer defining active height source

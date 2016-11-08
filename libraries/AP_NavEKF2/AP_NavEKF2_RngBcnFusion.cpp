@@ -229,6 +229,13 @@ void NavEKF2_core::FuseRngBcn()
 
             }
         }
+
+        // Update the fusion report
+        rngBcnFusionReport[rngBcnDataDelayed.beacon_ID].beaconPosNED = rngBcnDataDelayed.beacon_posNED;
+        rngBcnFusionReport[rngBcnDataDelayed.beacon_ID].innov = innovRngBcn;
+        rngBcnFusionReport[rngBcnDataDelayed.beacon_ID].innovVar = varInnovRngBcn;
+        rngBcnFusionReport[rngBcnDataDelayed.beacon_ID].rng = rngBcnDataDelayed.rng;
+        rngBcnFusionReport[rngBcnDataDelayed.beacon_ID].testRatio = rngBcnTestRatio;
     }
 }
 

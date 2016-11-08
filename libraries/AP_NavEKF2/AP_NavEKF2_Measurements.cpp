@@ -659,7 +659,7 @@ void NavEKF2_core::readRngBcnData()
     const AP_Beacon *beacon = _ahrs->get_beacon();
 
     // get the number of beacons in use
-    uint8_t N_beacons = beacon->count();
+    N_beacons = beacon->count();
 
     // search through all the beacons for new data and if we find it stop searching and push the data into the observation buffer
     bool newDataToPush = false;
@@ -694,9 +694,8 @@ void NavEKF2_core::readRngBcnData()
             // set the beacon position
             rngBcnDataNew.beacon_posNED = beacon->beacon_position(index);
 
-            // set the beacon identifier
-            // hack to work around lack of ID data during testing
-            rngBcnDataNew.beacon_ID = index;//beacon->beacon_id(index);
+            // identify the beacon identifier
+            rngBcnDataNew.beacon_ID = index;
 
             // indicate we have new data to push to the buffer
             newDataToPush = true;

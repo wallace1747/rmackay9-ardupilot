@@ -76,15 +76,19 @@ void NavEKF2_core::getFlowDebug(float &varFlow, float &gndOffset, float &flowInn
     gndOffsetErr = sqrtf(Popt); // note Popt is constrained to be non-negative in EstimateTerrainOffset()
 }
 
-// return data for debugging range beacon fusion
-void NavEKF2_core::getRangeBeaconDebug(uint8_t &ID, float &rng, float &innov, float &innovVar, float &testRatio, Vector3f &beaconPosNED) const
+// return data for debugging range beacon fusion one beacon at a time, incrementing the beacon index after each call
+void NavEKF2_core::getRangeBeaconDebug(uint8_t &ID, float &rng, float &innov, float &innovVar, float &testRatio, Vector3f &beaconPosNED)
 {
-    ID = rngBcnDataDelayed.beacon_ID;   // beacon identifier
-    rng = rngBcnDataDelayed.rng;        // measured range to beacon (m)
-    innov = innovRngBcn;                // range innovation (m)
-    innovVar = varInnovRngBcn;          // innovation variance (m^2)
-    testRatio = rngBcnTestRatio;        // innovation consistency test ratio
-    beaconPosNED = rngBcnDataDelayed.beacon_posNED; // beacon NED position
+    if (rngBcnFuseDataReportIndex >= N_beacons) {
+        rngBcnFuseDataReportIndex = 0;
+    }
+    ID = rngBcnFuseDataReportIndex;                                             // beacon identifier
+    rng = rngBcnFusionReport[rngBcnFuseDataReportIndex].rng;                    // measured range to beacon (m)
+    innov = rngBcnFusionReport[rngBcnFuseDataReportIndex].innov;                // range innovation (m)
+    innovVar = rngBcnFusionReport[rngBcnFuseDataReportIndex].innovVar;          // innovation variance (m^2)
+    testRatio = rngBcnFusionReport[rngBcnFuseDataReportIndex].testRatio;        // innovation consistency test ratio
+    beaconPosNED = rngBcnFusionReport[rngBcnFuseDataReportIndex].beaconPosNED;  // beacon NED position
+    rngBcnFuseDataReportIndex++;
 }
 
 // provides the height limit to be observed by the control loops
