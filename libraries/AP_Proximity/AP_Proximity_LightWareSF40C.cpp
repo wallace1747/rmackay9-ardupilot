@@ -57,20 +57,20 @@ bool AP_Proximity_LightWareSF40C::get_horizontal_distance(float angle_deg, float
 }
 
 // get boundary points around vehicle for use by avoidance
-//   returns NULL and sets num_points to zero if no boundary can be returned
+//   returns nullptr and sets num_points to zero if no boundary can be returned
 const Vector2f* AP_Proximity_LightWareSF40C::get_boundary_points(uint16_t& num_points) const
 {
     // high-level status check
     if (state.status != AP_Proximity::Proximity_Good) {
         num_points = 0;
-        return NULL;
+        return nullptr;
     }
 
     // check all sectors have valid data, if not, exit
     for (uint8_t i=0; i<_num_sectors; i++) {
         if (!_distance_valid[i]) {
             num_points = 0;
-            return NULL;
+            return nullptr;
         }
     }
 
