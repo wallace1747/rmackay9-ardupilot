@@ -194,3 +194,20 @@ bool AP_Proximity::get_horizontal_distance(float angle_deg, float &distance) con
 {
     return get_horizontal_distance(primary_instance, angle_deg, distance);
 }
+
+// get boundary points around vehicle for use by avoidance
+//   returns NULL and sets num_points to zero if no boundary can be returned
+const Vector2f* AP_Proximity::get_boundary_points(uint8_t instance, uint16_t& num_points) const
+{
+    if ((drivers[instance] == nullptr) || (_type[instance] == Proximity_Type_None)) {
+        num_points = 0;
+        return NULL;
+    }
+    // get boundary from backend
+    return drivers[primary_instance]->get_boundary_points(num_points);
+}
+
+const Vector2f* AP_Proximity::get_boundary_points(uint16_t& num_points) const
+{
+    return get_boundary_points(primary_instance, num_points);
+}

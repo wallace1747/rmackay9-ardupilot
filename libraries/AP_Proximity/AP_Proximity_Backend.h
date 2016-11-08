@@ -35,6 +35,10 @@ public:
     // returns true on successful read and places distance in distance
     virtual bool get_horizontal_distance(float angle_deg, float &distance) const = 0;
 
+    // get boundary points around vehicle for use by avoidance
+    //   returns NULL and sets num_points to zero if no boundary can be returned
+    virtual const Vector2f* get_boundary_points(uint16_t& num_points) const = 0;
+
 protected:
 
     // set status and update valid_count
