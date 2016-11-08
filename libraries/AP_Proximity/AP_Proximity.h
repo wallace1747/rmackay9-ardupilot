@@ -75,6 +75,10 @@ public:
     const Vector2f* get_boundary_points(uint8_t instance, uint16_t& num_points) const;
     const Vector2f* get_boundary_points(uint16_t& num_points) const;
 
+    // get distance and angle to closest object (used for pre-arm check)
+    //   returns true on success, false if no valid readings
+    bool get_closest_object(float& angle_deg, float &distance) const;
+
     // The Proximity_State structure is filled in by the backend driver
     struct Proximity_State {
         uint8_t                 instance;   // the instance number of this proximity sensor

@@ -211,3 +211,14 @@ const Vector2f* AP_Proximity::get_boundary_points(uint16_t& num_points) const
 {
     return get_boundary_points(primary_instance, num_points);
 }
+
+// get distance and angle to closest object (used for pre-arm check)
+//   returns true on success, false if no valid readings
+bool AP_Proximity::get_closest_object(float& angle_deg, float &distance) const
+{
+    if ((drivers[primary_instance] == nullptr) || (_type[primary_instance] == Proximity_Type_None)) {
+        return false;
+    }
+    // get closest object from backend
+    return drivers[primary_instance]->get_closest_object(angle_deg, distance);
+}

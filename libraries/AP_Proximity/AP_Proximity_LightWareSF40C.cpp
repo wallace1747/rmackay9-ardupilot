@@ -56,6 +56,31 @@ bool AP_Proximity_LightWareSF40C::get_horizontal_distance(float angle_deg, float
     return false;
 }
 
+// get distance and angle to closest object (used for pre-arm check)
+//   returns true on success, false if no valid readings
+bool AP_Proximity_LightWareSF40C::get_closest_object(float& angle_deg, float &distance) const
+{
+    bool sector_found = false;
+    uint8_t sector = 0;
+
+
+    // check all sectors for shorter distance
+    for (uint8_t i=0; i<_num_sectors; i++) {
+        if (_distance_valid[i]) {
+            if (!sector_found || (_distance[i] < _distance[sector])) {
+                sector = i;
+                sector_found = true;
+            }
+        }
+    }
+
+    if (sector_found) {
+        angle_deg = _angle[sector];
+        distance = _distance[sector];
+    }
+    return sector_found;
+}
+
 // get boundary points around vehicle for use by avoidance
 //   returns nullptr and sets num_points to zero if no boundary can be returned
 const Vector2f* AP_Proximity_LightWareSF40C::get_boundary_points(uint16_t& num_points) const
