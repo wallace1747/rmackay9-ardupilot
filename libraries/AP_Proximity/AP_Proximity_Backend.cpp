@@ -17,6 +17,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_Proximity.h"
 #include "AP_Proximity_Backend.h"
+#include <stdio.h>
 
 /*
   base class constructor. 
@@ -66,8 +67,18 @@ bool AP_Proximity_Backend::get_next_ignore_start_or_end(uint8_t start_or_end, in
     int16_t smallest_angle_diff = 0;
     int16_t smallest_angle_start = 0;
 
+    // debug
+    if (start_or_end == 0) {
+        ::printf("GNI start ");
+    } else {
+        ::printf("GNI end ");
+    }
+
     for (uint8_t i=0; i < PROXIMITY_MAX_IGNORE; i++) {
+        // debug
+        ::printf("area:%d ",(int)i);
         if (frontend._ignore_width_deg[i] != 0) {
+            ::printf(" wid:%d",(int)frontend._ignore_width_deg[i]);
             int16_t offset = start_or_end == 0 ? -frontend._ignore_width_deg[i] : +frontend._ignore_width_deg[i];
             int16_t ignore_start_angle = wrap_360(frontend._ignore_angle_deg[i] + offset/2.0f);
             int16_t ang_diff = wrap_360(ignore_start_angle - start_angle);
@@ -75,9 +86,12 @@ bool AP_Proximity_Backend::get_next_ignore_start_or_end(uint8_t start_or_end, in
                 smallest_angle_diff = ang_diff;
                 smallest_angle_start = ignore_start_angle;
                 found = true;
+                ::printf(" fnd:%d ",(int)smallest_angle_start);
             }
         }
     }
+
+    ::printf(" f:%d ang:%d\n",(int)found, (int)smallest_angle_start);
 
     if (found) {
         ignore_start = smallest_angle_start;

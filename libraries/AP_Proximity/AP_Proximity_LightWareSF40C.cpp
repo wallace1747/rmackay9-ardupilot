@@ -174,18 +174,21 @@ bool AP_Proximity_LightWareSF40C::initialise()
     if (_motor_direction > 1) {
         if ((_last_request_ms == 0) || AP_HAL::millis() - _last_request_ms > 1000) {
             set_motor_direction();
+            ::printf("PRX: set mot dir\n");
         }
     }
     // set forward direction once per second
     if (_forward_direction != frontend.get_yaw_correction(state.instance)) {
         if ((_last_request_ms == 0) || AP_HAL::millis() - _last_request_ms > 1000) {
             set_forward_direction();
+            ::printf("PRX: set fwd dir\n");
         }
     }
     // request motors turn on once per second
     if (_motor_speed == 0) {
         if ((_last_request_ms == 0) || AP_HAL::millis() - _last_request_ms > 1000) {
             set_motor_speed(true);
+            ::printf("PRX: set mot speed\n");
         }
         return false;
     }
@@ -215,10 +218,15 @@ void AP_Proximity_LightWareSF40C::init_sectors()
     get_next_ignore_start_or_end(0, 0, end_angle);  // get start of first ignore area
     get_next_ignore_start_or_end(1, end_angle, curr_angle); // start from end of first ignore area
 
+    ::printf("PRX: start:%d end:%d\n",(int)curr_angle, (int)end_angle);
+
     do {
         // calculate how many degrees of space we have until the start of the next ignore area
         get_next_ignore_start_or_end(0, curr_angle, next_ignore_start);
         int16_t degrees_to_fill = wrap_360(next_ignore_start - curr_angle);
+
+        // debug
+        ::printf("PRX: deg to fill:%d\n",(int)degrees_to_fill);
 
         // divide up the area into sectors
         while (degrees_to_fill > 0) {
@@ -236,6 +244,10 @@ void AP_Proximity_LightWareSF40C::init_sectors()
             // record the sector middle and width
             _sector_middle_deg[sector] = curr_angle + sector_size / 2.0f;
             _sector_width_deg[sector] = sector_size;
+
+            // debug
+            ::printf("PRX: sec:%d mid:%d wid:%d\n",(int)sector, (int)_sector_middle_deg[sector], (int)_sector_width_deg[sector]);
+
             // move onto next sector
             curr_angle += sector_size;
             sector++;
@@ -245,6 +257,19 @@ void AP_Proximity_LightWareSF40C::init_sectors()
 
     // set num sectors
     _num_sectors = sector;
+
+    // debug
+    if (_num_sectors == 0) {
+        ::printf("PRX: no sectors\n");
+    }
+    // debug
+    for (uint8_t i=0; i<_num_sectors; i++) {
+        ::printf("sec:%d mid:%d wid:%d\n",
+                (int)i,
+                (int)_sector_middle_deg[i],
+                (int)_sector_width_deg[i]
+                );
+    }
 
     // record success
     _sector_initialised = true;
