@@ -204,56 +204,58 @@ bool AP_Proximity_LightWareSF40C::initialise()
 void AP_Proximity_LightWareSF40C::init_sectors()
 {
     // use defaults if no ignore areas defined
-    if (get_ignore_angle_count() == 0) {
+    uint8_t ignore_area_count = get_ignore_angle_count();
+    if (ignore_area_count == 0) {
         _sector_initialised = true;
         return;
     }
 
-    // get end of first ignore area
-    int16_t curr_angle, end_angle;
-    int16_t next_ignore_start;
     uint8_t sector = 0;
 
-    // initialise current angle starting point to end of first ignore area
-    get_next_ignore_start_or_end(0, 0, end_angle);  // get start of first ignore area
-    get_next_ignore_start_or_end(1, end_angle, curr_angle); // start from end of first ignore area
+    for (uint8_t i=0; i<ignore_area_count; i++) {
 
-    ::printf("PRX: start:%d end:%d\n",(int)curr_angle, (int)end_angle);
+        // get ignore area info
+        uint16_t ign_area_angle;
+        uint8_t ign_area_width;
+        if (get_ignore_area(i, ign_area_angle, ign_area_width)) {
 
-    do {
-        // calculate how many degrees of space we have until the start of the next ignore area
-        get_next_ignore_start_or_end(0, curr_angle, next_ignore_start);
-        int16_t degrees_to_fill = wrap_360(next_ignore_start - curr_angle);
-
-        // debug
-        ::printf("PRX: deg to fill:%d\n",(int)degrees_to_fill);
-
-        // divide up the area into sectors
-        while (degrees_to_fill > 0) {
-            uint16_t sector_size;
-            if (degrees_to_fill >= 90) {
-                // set sector to maximum of 45 degrees
-                sector_size = 45;
-            } else if (degrees_to_fill > 45) {
-                // use half the remaining area to optimise size of this sector and the next
-                sector_size = degrees_to_fill / 2.0f;
-            } else  {
-                // 45 degrees or less are left so put it all into the next sector
-                sector_size = degrees_to_fill;
-            }
-            // record the sector middle and width
-            _sector_middle_deg[sector] = curr_angle + sector_size / 2.0f;
-            _sector_width_deg[sector] = sector_size;
+            // calculate how many degrees of space we have between this end of this ignore area and the start of the end
+            int16_t start_angle, end_angle;
+            get_next_ignore_start_or_end(1, ign_area_angle, start_angle);
+            get_next_ignore_start_or_end(0, start_angle, end_angle);
+            int16_t degrees_to_fill = wrap_360(end_angle - start_angle);
 
             // debug
-            ::printf("PRX: sec:%d mid:%d wid:%d\n",(int)sector, (int)_sector_middle_deg[sector], (int)_sector_width_deg[sector]);
+            ::printf("PRX: start:%d end:%d\n",(int)start_angle, (int)end_angle);
+            ::printf("PRX: deg to fill:%d\n",(int)degrees_to_fill);
 
-            // move onto next sector
-            curr_angle += sector_size;
-            sector++;
-            degrees_to_fill = next_ignore_start - curr_angle;
+            // divide up the area into sectors
+            while ((degrees_to_fill > 0) && (sector < PROXIMITY_SF40C_SECTORS_MAX)) {
+                uint16_t sector_size;
+                if (degrees_to_fill >= 90) {
+                    // set sector to maximum of 45 degrees
+                    sector_size = 45;
+                } else if (degrees_to_fill > 45) {
+                    // use half the remaining area to optimise size of this sector and the next
+                    sector_size = degrees_to_fill / 2.0f;
+                } else  {
+                    // 45 degrees or less are left so put it all into the next sector
+                    sector_size = degrees_to_fill;
+                }
+                // record the sector middle and width
+                _sector_middle_deg[sector] = wrap_360(start_angle + sector_size / 2.0f);
+                _sector_width_deg[sector] = sector_size;
+
+                // debug
+                ::printf("PRX: sec:%d mid:%d wid:%d\n",(int)sector, (int)_sector_middle_deg[sector], (int)_sector_width_deg[sector]);
+
+                // move onto next sector
+                start_angle += sector_size;
+                sector++;
+                degrees_to_fill -= sector_size;
+            }
         }
-    } while (wrap_360(end_angle - curr_angle) > 0);
+    }
 
     // set num sectors
     _num_sectors = sector;

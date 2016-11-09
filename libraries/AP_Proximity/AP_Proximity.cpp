@@ -100,27 +100,55 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_IGN_WID4", 11, AP_Proximity, _ignore_width_deg[3], 0),
 
+    // @Param: _IGN_ANG5
+    // @DisplayName: Proximity sensor ignore angle 5
+    // @Description: Proximity sensor ignore angle 5
+    // @Range: 0 360
+    // @User: Standard
+    AP_GROUPINFO("_IGN_ANG5", 12, AP_Proximity, _ignore_angle_deg[4], 0),
+
+    // @Param: _IGN_WID5
+    // @DisplayName: Proximity sensor ignore width 5
+    // @Description: Proximity sensor ignore width 5
+    // @Range: 0 45
+    // @User: Standard
+    AP_GROUPINFO("_IGN_WID5", 13, AP_Proximity, _ignore_width_deg[4], 0),
+
+    // @Param: _IGN_ANG6
+    // @DisplayName: Proximity sensor ignore angle 6
+    // @Description: Proximity sensor ignore angle 6
+    // @Range: 0 360
+    // @User: Standard
+    AP_GROUPINFO("_IGN_ANG6", 14, AP_Proximity, _ignore_angle_deg[5], 0),
+
+    // @Param: _IGN_WID6
+    // @DisplayName: Proximity sensor ignore width 6
+    // @Description: Proximity sensor ignore width 6
+    // @Range: 0 45
+    // @User: Standard
+    AP_GROUPINFO("_IGN_WID6", 15, AP_Proximity, _ignore_width_deg[5], 0),
+
 #if PROXIMITY_MAX_INSTANCES > 1
     // @Param: 2_TYPE
     // @DisplayName: Second Proximity type
     // @Description: What type of proximity sensor is connected
     // @Values: 0:None,1:LightWareSF40C
     // @User: Advanced
-    AP_GROUPINFO("2_TYPE", 12, AP_Proximity, _type[1], 0),
+    AP_GROUPINFO("2_TYPE", 16, AP_Proximity, _type[1], 0),
 
     // @Param: _ORIENT
     // @DisplayName: Second Proximity sensor orientation
     // @Description: Second Proximity sensor orientation
     // @Values: 0:Default,1:Upside Down
     // @User: Standard
-    AP_GROUPINFO("2_ORIENT", 13, AP_Proximity, _orientation[1], 0),
+    AP_GROUPINFO("2_ORIENT", 17, AP_Proximity, _orientation[1], 0),
 
     // @Param: _YAW_CORR
     // @DisplayName: Second Proximity sensor yaw correction
     // @Description: Second Proximity sensor yaw correction
     // @Range: -180 180
     // @User: Standard
-    AP_GROUPINFO("2_YAW_CORR", 14, AP_Proximity, _yaw_correction[1], PROXIMITY_YAW_CORRECTION_DEFAULT),
+    AP_GROUPINFO("2_YAW_CORR", 18, AP_Proximity, _yaw_correction[1], PROXIMITY_YAW_CORRECTION_DEFAULT),
 #endif
 
     AP_GROUPEND
