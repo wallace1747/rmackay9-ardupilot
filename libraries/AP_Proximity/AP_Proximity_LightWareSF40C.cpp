@@ -189,7 +189,65 @@ bool AP_Proximity_LightWareSF40C::initialise()
         }
         return false;
     }
+    // initialise sectors
+    if (!_sector_initialised) {
+        init_sectors();
+        return false;
+    }
     return true;
+}
+
+// initialise sector angles using user defined ignore areas
+void AP_Proximity_LightWareSF40C::init_sectors()
+{
+    // use defaults if no ignore areas defined
+    if (get_ignore_angle_count() == 0) {
+        _sector_initialised = true;
+        return;
+    }
+
+    // get end of first ignore area
+    int16_t curr_angle, end_angle;
+    int16_t next_ignore_start;
+    uint8_t sector = 0;
+
+    // initialise current angle starting point to end of first ignore area
+    get_next_ignore_start_or_end(0, 0, end_angle);  // get start of first ignore area
+    get_next_ignore_start_or_end(1, end_angle, curr_angle); // start from end of first ignore area
+
+    do {
+        // calculate how many degrees of space we have until the start of the next ignore area
+        get_next_ignore_start_or_end(0, curr_angle, next_ignore_start);
+        int16_t degrees_to_fill = wrap_360(next_ignore_start - curr_angle);
+
+        // divide up the area into sectors
+        while (degrees_to_fill > 0) {
+            uint16_t sector_size;
+            if (degrees_to_fill >= 90) {
+                // set sector to maximum of 45 degrees
+                sector_size = 45;
+            } else if (degrees_to_fill > 45) {
+                // use half the remaining area to optimise size of this sector and the next
+                sector_size = degrees_to_fill / 2.0f;
+            } else  {
+                // 45 degrees or less are left so put it all into the next sector
+                sector_size = degrees_to_fill;
+            }
+            // record the sector middle and width
+            _sector_middle_deg[sector] = curr_angle + sector_size / 2.0f;
+            _sector_width_deg[sector] = sector_size;
+            // move onto next sector
+            curr_angle += sector_size;
+            sector++;
+            degrees_to_fill = next_ignore_start - curr_angle;
+        }
+    } while (wrap_360(end_angle - curr_angle) > 0);
+
+    // set num sectors
+    _num_sectors = sector;
+
+    // record success
+    _sector_initialised = true;
 }
 
 // set speed of rotating motor

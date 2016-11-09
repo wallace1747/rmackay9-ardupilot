@@ -23,13 +23,16 @@
 
 #define PROXIMITY_MAX_INSTANCES             1   // Maximum number of proximity sensor instances available on this platform
 #define PROXIMITY_YAW_CORRECTION_DEFAULT    22  // default correction for sensor error in yaw
+#define PROXIMITY_MAX_IGNORE                4   // up to four areas can be ignored (i.e. for four legs of a vehicle)
 
 class AP_Proximity_Backend;
+class AP_Proximity_LightWareSF40C;
 
 class AP_Proximity
 {
 public:
     friend class AP_Proximity_Backend;
+    friend class AP_Proximity_LightWareSF40C;
 
     AP_Proximity(AP_SerialManager &_serial_manager);
 
@@ -99,6 +102,8 @@ private:
     AP_Int8  _type[PROXIMITY_MAX_INSTANCES];
     AP_Int8  _orientation[PROXIMITY_MAX_INSTANCES];
     AP_Int16 _yaw_correction[PROXIMITY_MAX_INSTANCES];
+    AP_Int16 _ignore_angle_deg[PROXIMITY_MAX_IGNORE];   // angle (in degrees) of area that should be ignored by sensor (i.e. leg shows up)
+    AP_Int8 _ignore_width_deg[PROXIMITY_MAX_IGNORE];    // width of beam (in degrees) that should be ignored
 
     void detect_instance(uint8_t instance);
     void update_instance(uint8_t instance);  
