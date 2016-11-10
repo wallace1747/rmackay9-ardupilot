@@ -623,8 +623,8 @@ bool Copter::pre_arm_proximity_check(bool display_failure)
     // get closest object
     float angle_deg, distance;
     if (g2.proximity.get_closest_object(angle_deg, distance)) {
-        // display error if something is within 1m
-        if (distance <= 1.0f) {
+        // display error if something is within 60cm
+        if (distance <= 0.6f) {
             if (display_failure) {
                 GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Proximity %d deg, %4.2fm", (int)angle_deg, (double)distance);
             }
