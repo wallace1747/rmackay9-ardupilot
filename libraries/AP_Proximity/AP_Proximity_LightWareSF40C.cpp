@@ -242,7 +242,7 @@ void AP_Proximity_LightWareSF40C::init_sectors()
                 sector_size = degrees_to_fill;
             }
             // record the sector middle and width
-            _sector_middle_deg[sector] = curr_angle + sector_size / 2.0f;
+            _sector_middle_deg[sector] = wrap_360(curr_angle + sector_size / 2.0f);
             _sector_width_deg[sector] = sector_size;
 
             // debug
