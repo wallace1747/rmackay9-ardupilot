@@ -55,8 +55,8 @@ void AP_Beacon_SITL::update(void)
     origin.lat = get_beacon_origin_lat() * 1.0e7;
     origin.lng = get_beacon_origin_lon() * 1.0e7;
     origin.alt = get_beacon_origin_alt() * 1.0e2;
-
     Location beacon_loc = origin;
+    beacon_loc.alt += 120; // this is a hack to replicate the placement of beacons on tripods
     switch (beacon_id) {
     case 0:
         location_offset(beacon_loc, ORIGIN_DISTANCE, -ORIGIN_DISTANCE);
