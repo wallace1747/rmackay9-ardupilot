@@ -138,9 +138,24 @@ void AC_Avoid::adjust_velocity_proximity(float kP, float accel_cmss, Vector2f &d
     }
 
     // get boundary from proximity sensor
-    uint16_t num_points;
-    const Vector2f *boundary = _proximity.get_boundary_points(num_points);
-    adjust_velocity_polygon(kP, accel_cmss, desired_vel, boundary, num_points, false);
+    //uint16_t num_points;
+    //const Vector2f *boundary = _proximity.get_boundary_points(num_points);
+    //adjust_velocity_polygon(kP, accel_cmss, desired_vel, boundary, num_points, false);
+
+    // normalise desired velocity vector
+    Vector2f vel_dir = desired_vel.normalized();
+
+    // get angle of desired velocity
+    float heading_rad = atan2f(vel_dir.y, vel_dir.x);
+
+    // rotate desired velocity angle into body-frame angle
+    float heading_bf_rad = wrap_PI(heading_rad - _ahrs.yaw);
+
+    // get nearest object using body-frame angle and shorten desired velocity (which must remain in earth-frame)
+    float distance_m;
+    if (_proximity.get_horizontal_distance(degrees(heading_bf_rad), distance_m)) {
+        limit_velocity(kP, accel_cmss, desired_vel, vel_dir, MAX(distance_m*100.0f - 200.0f, 0.0f));
+    }
 }
 
 /*
