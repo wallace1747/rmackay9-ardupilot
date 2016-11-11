@@ -442,9 +442,6 @@ void NavEKF2_core::CalcRangeBeaconPosDownOffset(float obsVar)
         // calculate a filtered innovation magnitude to be used to select between the high or low offset
         highOffsetInnovFilt = 0.99f * bcnPosOffsetHighVar + 0.01f * fabsf(innov);
 
-        // state prediction - bias state estimate high
-        bcnPosOffsetHigh += 0.05f;
-
         // covariance prediction
         bcnPosOffsetHighVar += 0.01f;
 
@@ -479,9 +476,6 @@ void NavEKF2_core::CalcRangeBeaconPosDownOffset(float obsVar)
 
         // calculate a filtered innovation magnitude to be used to select between the high or low offset
         lowOffsetInnovFilt = 0.99f * lowOffsetInnovFilt + 0.01f * fabsf(innov);
-
-        // state prediction - bias state estimate low
-        bcnPosOffsetLow -= 0.05;
 
         // covariance prediction
         bcnPosOffsetLowVar += 0.01f;
