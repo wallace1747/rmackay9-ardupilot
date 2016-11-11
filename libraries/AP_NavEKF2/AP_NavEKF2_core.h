@@ -456,6 +456,9 @@ private:
     // use range beaon measurements to calculate a static position
     void FuseRngBcnStatic();
 
+    // calculate the offset from EKF vetical position datum to the range beacon system datum
+    void CalcRangeBeaconPosDownOffset(float obsVar);
+
     // fuse magnetometer measurements
     void FuseMagnetometer();
 
@@ -987,7 +990,14 @@ private:
     float maxBcnPosD;                   // maximum position of all beacons in the down direction (m)
     float minBcnPosD;                   // minimum position of all beacons in the down direction (m)
     float bcnPosOffset;                 // Vertical position offset of the beacon constellation origin relative to the EKF origin (m)
-    float bcnPosOffsetVar;              // Variance of the bcnPosoffset state (m)
+
+    float bcnPosOffsetHigh;             // Vertical position offset of the beacon constellation origin relative to the EKF origin (m)
+    float bcnPosOffsetHighVar;          // Variance of the bcnPosOffsetHigh state (m)
+    float highOffsetInnovFilt;          // Filtered magnitude of the range innovations using bcnPosOffsetHigh
+
+    float bcnPosOffsetLow;              // Vertical position offset of the beacon constellation origin relative to the EKF origin (m)
+    float bcnPosOffsetLowVar;           // Variance of the bcnPosoffset state (m)
+    float lowOffsetInnovFilt;           // Filtered magnitude of the range innovations using bcnPosOffsetLow
 
     // Range Beacon Fusion Debug Reporting
     uint8_t rngBcnFuseDataReportIndex;// index of range beacon fusion data last reported

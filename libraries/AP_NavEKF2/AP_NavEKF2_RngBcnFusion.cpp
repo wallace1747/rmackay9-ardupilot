@@ -122,29 +122,11 @@ void NavEKF2_core::FuseRngBcn()
             Kfusion[5] = -t26*(P[5][6]*t4*t9+P[5][7]*t3*t9+P[5][8]*t2*t9);
             Kfusion[8] = -t26*(t10+P[8][6]*t4*t9+P[8][7]*t3*t9);
             Kfusion[15] = -t26*(P[15][6]*t4*t9+P[15][7]*t3*t9+P[15][8]*t2*t9);
+            bcnPosOffset = 0.0f;
 
         } else {
-            // Handle height offsets between the primary height source and the range beacons by estimating
-            // the beacon systems global vertical position offset using a single state Kalman filter
-            // The estimated offset is used to correct the beacon height when data is retrieved from the buffer
-
-            // covariance prediction
-            bcnPosOffsetVar += 0.01f;
-
-            // calculate the innovation variance
-            float innovVar = H_BCN[8] * bcnPosOffsetVar * H_BCN[8] + R_BCN;
-            innovVar = MAX(innovVar, R_BCN);
-
-            // calculate the Kalman gain
-            float gain = (bcnPosOffsetVar * H_BCN[8]) / innovVar;
-
-            // state update - note sign for state correction is reversed from normal equation
-            // because we are adjusting the beacon, not the flight vehicle
-            bcnPosOffset += innovRngBcn * gain;
-
-            // covariance update
-            bcnPosOffsetVar -= gain * H_BCN[8] * bcnPosOffsetVar;
-            bcnPosOffsetVar = MAX(bcnPosOffsetVar, 0.0f);
+            // calculate the vertical offset from EKF datum to beacon datum
+            CalcRangeBeaconPosDownOffset(R_BCN);
 
             // don't allow the range measurement to affect the vertical states in the main filter
             Kfusion[5] = 0.0f;
@@ -172,6 +154,11 @@ void NavEKF2_core::FuseRngBcn()
         }
         Kfusion[22] = -t26*(P[22][6]*t4*t9+P[22][7]*t3*t9+P[22][8]*t2*t9);
         Kfusion[23] = -t26*(P[23][6]*t4*t9+P[23][7]*t3*t9+P[23][8]*t2*t9);
+
+        // Calculate innovation using the selected offset value
+        Vector3f delta = stateStruct.position - rngBcnDataDelayed.beacon_posNED;
+        delta.z -= bcnPosOffset;
+        innovRngBcn = delta.length() - rngBcnDataDelayed.rng;
 
         // calculate the innovation consistency test ratio
         rngBcnTestRatio = sq(innovRngBcn) / (sq(MAX(0.01f * (float)frontend->_rngBcnInnovGate, 1.0f)) * varInnovRngBcn);
@@ -301,7 +288,7 @@ void NavEKF2_core::FuseRngBcnStatic()
         }
     }
 
-    if (rngBcnAlignmentStarted && !rngBcnAlignmentCompleted) {
+    if (rngBcnAlignmentStarted) {
         numBcnMeas++;
 
         // Add some process noise to the states at each time step
@@ -411,15 +398,117 @@ void NavEKF2_core::FuseRngBcnStatic()
             }
         }
 
-        if (numBcnMeas >= 100 && !rngBcnAlignmentCompleted) {
-            // resolve beacon ambiguity by using the difference betweeen beacon system height and EKF height
-            // to set the initial beacon offset
-            bcnPosOffset = receiverPos.z - stateStruct.position.z;
-            // range beacon posiiton alignment is completed
+        if (numBcnMeas >= 100) {
             rngBcnAlignmentCompleted = true;
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF2 IMU%u beacon alignment at %3.1f,%3.1f,%3.1f (m)",(unsigned)imu_index,receiverPos.x,receiverPos.y,receiverPos.z);
-            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF2 IMU%u initial beacon pos offset %3.1f (m)",(unsigned)imu_index,bcnPosOffset);
         }
     }
 }
+
+/*
+Run a single state Kalman filter to estimate the vertical position offset of the range beacon constellation
+Calculate using a high and low hypothesis and select the hypothesis with the lowest innovation sequence
+*/
+void NavEKF2_core::CalcRangeBeaconPosDownOffset(float obsVar)
+{
+    // Handle height offsets between the primary height source and the range beacons by estimating
+    // the beacon systems global vertical position offset using a single state Kalman filter
+    // The estimated offset is used to correct the beacon height when calculating innovations
+    // A high and low estimate is calculated to handle the ambiguity in height associated with beacon positions that are co-planar
+    // The main filter then uses the offset with the smaller innovations
+
+    float innov;    // range measurement innovation (m)
+    float innovVar; // range measurement innovation variance (m^2)
+    float gain;     // Kalman gain
+    float obsDeriv; // derivative of observation relative to state
+
+    // estimate upper value for offset
+
+    // calculate observation derivative
+    float t2 = rngBcnDataDelayed.beacon_posNED.z - stateStruct.position.z + bcnPosOffsetHigh;
+    float t3 = rngBcnDataDelayed.beacon_posNED.y - stateStruct.position.y;
+    float t4 = rngBcnDataDelayed.beacon_posNED.x - stateStruct.position.x;
+    float t5 = t2*t2;
+    float t6 = t3*t3;
+    float t7 = t4*t4;
+    float t8 = t5+t6+t7;
+    float t9;
+    if (t8 > 0.1f) {
+        t9 = 1.0f/sqrt(t8);
+        obsDeriv = -t2*t9;
+
+        // Calculate innovation
+        innov = sqrt(t8) - rngBcnDataDelayed.rng;
+
+        // calculate a filtered innovation magnitude to be used to select between the high or low offset
+        highOffsetInnovFilt = 0.99f * bcnPosOffsetHighVar + 0.01f * fabsf(innov);
+
+        // state prediction - bias state estimate high
+        bcnPosOffsetHigh += 0.05f;
+
+        // covariance prediction
+        bcnPosOffsetHighVar += 0.01f;
+
+        // calculate the innovation variance
+        innovVar = obsDeriv * bcnPosOffsetHighVar * obsDeriv + obsVar;
+        innovVar = MAX(innovVar, obsVar);
+
+        // calculate the Kalman gain
+        gain = (bcnPosOffsetHighVar * obsDeriv) / innovVar;
+
+        // state update - note sign for state correction is reversed from normal equation
+        // because we are adjusting the beacon, not the flight vehicle
+        bcnPosOffsetHigh += innov * gain;
+
+        // covariance update
+        bcnPosOffsetHighVar -= gain * obsDeriv * bcnPosOffsetHighVar;
+        bcnPosOffsetHighVar = MAX(bcnPosOffsetHighVar, 0.0f);
+    }
+
+    // estimate lower value for offset
+
+    // calculate observation derivative
+    t2 = rngBcnDataDelayed.beacon_posNED.z - stateStruct.position.z + bcnPosOffsetLow;
+    t5 = t2*t2;
+    t8 = t5+t6+t7;
+    if (t8 > 0.1f) {
+        t9 = 1.0f/sqrt(t8);
+        obsDeriv = -t2*t9;
+
+        // Calculate innovation
+        innov = sqrt(t8) - rngBcnDataDelayed.rng;
+
+        // calculate a filtered innovation magnitude to be used to select between the high or low offset
+        lowOffsetInnovFilt = 0.99f * lowOffsetInnovFilt + 0.01f * fabsf(innov);
+
+        // state prediction - bias state estimate low
+        bcnPosOffsetLow -= 0.05;
+
+        // covariance prediction
+        bcnPosOffsetLowVar += 0.01f;
+
+        // calculate the innovation variance
+        innovVar = obsDeriv * bcnPosOffsetLowVar * obsDeriv + obsVar;
+        innovVar = MAX(innovVar, obsVar);
+
+        // calculate the Kalman gain
+        gain = (bcnPosOffsetLowVar * obsDeriv) / innovVar;
+
+        // state update - note sign for state correction is reversed from normal equation
+        // because we are adjusting the beacon, not the flight vehicle
+        bcnPosOffsetLow += innov * gain;
+
+        // covariance update
+        bcnPosOffsetLowVar -= gain * obsDeriv * bcnPosOffsetLowVar;
+        bcnPosOffsetLowVar = MAX(bcnPosOffsetLowVar, 0.0f);
+    }
+
+    // calculate the innovation for the main filter using the offset with the smallest innovation history
+    if (highOffsetInnovFilt > lowOffsetInnovFilt) {
+        bcnPosOffset = bcnPosOffsetLow;
+    } else {
+        bcnPosOffset = bcnPosOffsetHigh;
+    }
+
+}
+
 #endif // HAL_CPU_CLASS

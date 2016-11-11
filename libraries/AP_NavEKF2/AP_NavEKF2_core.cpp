@@ -304,7 +304,12 @@ void NavEKF2_core::InitialiseVariables()
     minBcnPosD = 0.0f;
     maxBcnPosD = 0.0f;
     bcnPosOffset = 0.0f;
-    bcnPosOffsetVar = 0.0f;
+    bcnPosOffsetHigh = 0.0f;
+    bcnPosOffsetHighVar = 0.0f;
+    highOffsetInnovFilt = 0.0f;
+    bcnPosOffsetLow = 0.0f;
+    bcnPosOffsetLowVar = 0.0f;
+    lowOffsetInnovFilt = 0.0f;
 
     // zero data buffers
     storedIMU.reset();

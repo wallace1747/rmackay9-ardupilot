@@ -293,7 +293,14 @@ void NavEKF2_core::setAidingMode()
             velTimeout = false;
             // We have commenced aiding and range beacon usage is allowed
             if (canUseRangeBeacon) {
+                // resolve beacon ambiguity by using the difference betweeen beacon system height and EKF height
+                // to set the initial beacon offsets
+                bcnPosOffset = stateStruct.position.z - receiverPos.z;
+                bcnPosOffsetHigh = bcnPosOffset + maxBcnPosD + 10.0f;
+                bcnPosOffsetLow = bcnPosOffset + minBcnPosD - 10.0f;
                 GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF2 IMU%u is using range beacons",(unsigned)imu_index);
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF2 IMU%u initial pos NE = %3.1f,%3.1f (m)",(unsigned)imu_index,receiverPos.x,receiverPos.y);
+                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF2 IMU%u initial beacon pos D offset = %3.1f (m)",(unsigned)imu_index,bcnPosOffset);
             }
             // reset the last fusion accepted times to prevent unwanted activation of timeout logic
             lastPosPassTime_ms = imuSampleTime_ms;
