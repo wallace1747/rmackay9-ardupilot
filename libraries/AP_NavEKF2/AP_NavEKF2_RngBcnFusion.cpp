@@ -442,6 +442,12 @@ void NavEKF2_core::CalcRangeBeaconPosDownOffset(float obsVar)
         // calculate a filtered innovation magnitude to be used to select between the high or low offset
         highOffsetInnovFilt = 0.99f * bcnPosOffsetHighVar + 0.01f * fabsf(innov);
 
+        // state prediction
+        // bias state estimate if upper and lower values approach to prevent them coalescing
+        if (bcnPosOffsetHigh - bcnPosOffsetLow < 5.0f) {
+            bcnPosOffsetHigh += 0.05f;
+        }
+
         // covariance prediction
         bcnPosOffsetHighVar += 0.01f;
 
@@ -477,6 +483,12 @@ void NavEKF2_core::CalcRangeBeaconPosDownOffset(float obsVar)
         // calculate a filtered innovation magnitude to be used to select between the high or low offset
         lowOffsetInnovFilt = 0.99f * lowOffsetInnovFilt + 0.01f * fabsf(innov);
 
+        // state prediction
+        // bias state estimate if upper and lower values approach to prevent them coalescing
+        if (bcnPosOffsetHigh - bcnPosOffsetLow < 5.0f) {
+            bcnPosOffsetLow -= 0.05f;
+        }
+
         // covariance prediction
         bcnPosOffsetLowVar += 0.01f;
 
@@ -494,6 +506,13 @@ void NavEKF2_core::CalcRangeBeaconPosDownOffset(float obsVar)
         // covariance update
         bcnPosOffsetLowVar -= gain * obsDeriv * bcnPosOffsetLowVar;
         bcnPosOffsetLowVar = MAX(bcnPosOffsetLowVar, 0.0f);
+    }
+
+    // prevent upper and lower estimates crossing
+    if (bcnPosOffsetHigh - bcnPosOffsetLow < 1.0f) {
+        float avg = 0.5f * (bcnPosOffsetHigh + bcnPosOffsetLow);
+        bcnPosOffsetHigh = avg + 0.5f;
+        bcnPosOffsetLow = avg - 0.5f;
     }
 
     // calculate the innovation for the main filter using the offset with the smallest innovation history
