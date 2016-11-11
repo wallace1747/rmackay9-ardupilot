@@ -381,7 +381,8 @@ struct PACKED log_RngBcnDebug {
     uint16_t testRatio;      // beacon range innovation consistency test ratio *100
     int16_t beaconPosN;     // beacon north position (cm)
     int16_t beaconPosE;     // beacon east position (cm)
-    int16_t beaconPosD;     // beacon down position (cm0
+    int16_t beaconPosD;     // beacon down position (cm)
+    int16_t offset;         // vertical position offset of beacons rel to EKF origin (cm)
 };
 
 struct PACKED log_Cmd {
@@ -835,7 +836,7 @@ Format characters in the format string for binary log messages
     { LOG_NKF9_MSG, sizeof(log_NKF4), \
       "NKF9","QcccccfbbHBHHb","TimeUS,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI" }, \
     { LOG_NKF10_MSG, sizeof(log_RngBcnDebug), \
-      "NK10","QBccCCccc","TimeUS,ID,rng,innov,SIV,TR,BPN,BPE,BPD" }, \
+      "NKF0","QBccCCcccc","TimeUS,ID,rng,innov,SIV,TR,BPN,BPE,BPD,OFS" }, \
     { LOG_TERRAIN_MSG, sizeof(log_TERRAIN), \
       "TERR","QBLLHffHH","TimeUS,Status,Lat,Lng,Spacing,TerrH,CHeight,Pending,Loaded" }, \
     { LOG_GPS_UBX1_MSG, sizeof(log_Ubx1), \
