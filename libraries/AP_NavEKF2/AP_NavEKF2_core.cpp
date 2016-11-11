@@ -301,6 +301,10 @@ void NavEKF2_core::InitialiseVariables()
     memset(&rngBcnFusionReport, 0, sizeof(rngBcnFusionReport));
     rngBcnFuseDataReportIndex = 0;
     N_beacons = 0;
+    minBcnPosD = 0.0f;
+    maxBcnPosD = 0.0f;
+    bcnPosOffset = 0.0f;
+    bcnPosOffsetVar = 0.0f;
 
     // zero data buffers
     storedIMU.reset();

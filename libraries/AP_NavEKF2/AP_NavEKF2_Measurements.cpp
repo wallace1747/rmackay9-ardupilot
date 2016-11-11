@@ -748,5 +748,11 @@ void NavEKF2_core::readRngBcnData()
 
     // Check the buffer for measurements that have been overtaken by the fusion time horizon and need to be fused
     rngBcnDataToFuse = storedRangeBeacon.recall(rngBcnDataDelayed,imuDataDelayed.time_ms);
+
+    // Correct the vertical position of beacons for the difference in height between the beacon height datum and EKF local height datum
+    if (rngBcnDataToFuse) {
+        rngBcnDataDelayed.beacon_posNED.z += bcnPosOffset;
+    }
+
 }
 #endif // HAL_CPU_CLASS

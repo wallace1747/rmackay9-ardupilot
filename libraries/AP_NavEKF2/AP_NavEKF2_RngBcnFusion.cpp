@@ -6,6 +6,7 @@
 #include "AP_NavEKF2_core.h"
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <GCS_MAVLink/GCS.h>
 
 #include <stdio.h>
 
@@ -60,6 +61,9 @@ void NavEKF2_core::FuseRngBcn()
     Vector3f deltaPosNED = stateStruct.position - rngBcnDataDelayed.beacon_posNED;
     rngPred = deltaPosNED.length();
 
+    // calculate measurement innovation
+    innovRngBcn = rngPred - rngBcnDataDelayed.rng;
+
     // perform fusion of range measurement
     if (rngPred > 0.1f)
     {
@@ -111,15 +115,42 @@ void NavEKF2_core::FuseRngBcn()
         Kfusion[2] = -t26*(P[2][6]*t4*t9+P[2][7]*t3*t9+P[2][8]*t2*t9);
         Kfusion[3] = -t26*(P[3][6]*t4*t9+P[3][7]*t3*t9+P[3][8]*t2*t9);
         Kfusion[4] = -t26*(P[4][6]*t4*t9+P[4][7]*t3*t9+P[4][8]*t2*t9);
-        Kfusion[5] = -t26*(P[5][6]*t4*t9+P[5][7]*t3*t9+P[5][8]*t2*t9);
         Kfusion[6] = -t26*(t22+P[6][7]*t3*t9+P[6][8]*t2*t9);
         Kfusion[7] = -t26*(t16+P[7][6]*t4*t9+P[7][8]*t2*t9);
-        // Don't allow range measurements to affect vertical position
-        // if using a different source for height aiding
         if (activeHgtSource == HGT_SOURCE_BCN) {
+            // We are using the range beacon as the primary height reference, so allow it to modify the EKF's vertical states
+            Kfusion[5] = -t26*(P[5][6]*t4*t9+P[5][7]*t3*t9+P[5][8]*t2*t9);
             Kfusion[8] = -t26*(t10+P[8][6]*t4*t9+P[8][7]*t3*t9);
+            Kfusion[15] = -t26*(P[15][6]*t4*t9+P[15][7]*t3*t9+P[15][8]*t2*t9);
+
         } else {
+            // Handle height offsets between the primary height source and the range beacons by estimating
+            // the beacon systems global vertical position offset using a single state Kalman filter
+            // The estimated offset is used to correct the beacon height when data is retrieved from the buffer
+
+            // covariance prediction
+            bcnPosOffsetVar += 0.01f;
+
+            // calculate the innovation variance
+            float innovVar = H_BCN[8] * bcnPosOffsetVar * H_BCN[8] + R_BCN;
+            innovVar = MAX(innovVar, R_BCN);
+
+            // calculate the Kalman gain
+            float gain = (bcnPosOffsetVar * H_BCN[8]) / innovVar;
+
+            // state update - note sign for state correction is reversed from normal equation
+            // because we are adjusting the beacon, not the flight vehicle
+            bcnPosOffset += innovRngBcn * gain;
+
+            // covariance update
+            bcnPosOffsetVar -= gain * H_BCN[8] * bcnPosOffsetVar;
+            bcnPosOffsetVar = MAX(bcnPosOffsetVar, 0.0f);
+
+            // don't allow the range measurement to affect the vertical states in the main filter
+            Kfusion[5] = 0.0f;
             Kfusion[8] = 0.0f;
+            Kfusion[15] = 0.0f;
+
         }
         Kfusion[9] = -t26*(P[9][6]*t4*t9+P[9][7]*t3*t9+P[9][8]*t2*t9);
         Kfusion[10] = -t26*(P[10][6]*t4*t9+P[10][7]*t3*t9+P[10][8]*t2*t9);
@@ -127,7 +158,6 @@ void NavEKF2_core::FuseRngBcn()
         Kfusion[12] = -t26*(P[12][6]*t4*t9+P[12][7]*t3*t9+P[12][8]*t2*t9);
         Kfusion[13] = -t26*(P[13][6]*t4*t9+P[13][7]*t3*t9+P[13][8]*t2*t9);
         Kfusion[14] = -t26*(P[14][6]*t4*t9+P[14][7]*t3*t9+P[14][8]*t2*t9);
-        Kfusion[15] = -t26*(P[15][6]*t4*t9+P[15][7]*t3*t9+P[15][8]*t2*t9);
         if (!inhibitMagStates) {
             Kfusion[16] = -t26*(P[16][6]*t4*t9+P[16][7]*t3*t9+P[16][8]*t2*t9);
             Kfusion[17] = -t26*(P[17][6]*t4*t9+P[17][7]*t3*t9+P[17][8]*t2*t9);
@@ -142,9 +172,6 @@ void NavEKF2_core::FuseRngBcn()
         }
         Kfusion[22] = -t26*(P[22][6]*t4*t9+P[22][7]*t3*t9+P[22][8]*t2*t9);
         Kfusion[23] = -t26*(P[23][6]*t4*t9+P[23][7]*t3*t9+P[23][8]*t2*t9);
-
-        // calculate measurement innovation
-        innovRngBcn = rngPred - rngBcnDataDelayed.rng;
 
         // calculate the innovation consistency test ratio
         rngBcnTestRatio = sq(innovRngBcn) / (sq(MAX(0.01f * (float)frontend->_rngBcnInnovGate, 1.0f)) * varInnovRngBcn);
@@ -251,11 +278,21 @@ void NavEKF2_core::FuseRngBcnStatic()
             lastBeaconIndex = rngBcnDataDelayed.beacon_ID;
             rngSum += rngBcnDataDelayed.rng;
             numBcnMeas++;
+
+            // capture the beacon vertical spread
+            if (rngBcnDataDelayed.beacon_posNED.z > maxBcnPosD) {
+                maxBcnPosD = rngBcnDataDelayed.beacon_posNED.z;
+            } else if(rngBcnDataDelayed.beacon_posNED.z < minBcnPosD) {
+                minBcnPosD = rngBcnDataDelayed.beacon_posNED.z;
+            }
         }
         if (numBcnMeas >= 100) {
             rngBcnAlignmentStarted = true;
             float tempVar = 1.0f / (float)numBcnMeas;
-            receiverPos = rngBcnPosSum * tempVar;
+            // initialise the receiver position to the centre of the beacons and at zero height
+            receiverPos.x = rngBcnPosSum.x * tempVar;
+            receiverPos.y = rngBcnPosSum.y * tempVar;
+            receiverPos.z = 0.0f;
             receiverPosCov[2][2] = receiverPosCov[1][1] = receiverPosCov[0][0] = rngSum * tempVar;
             lastBeaconIndex  = 0;
             numBcnMeas = 0;
@@ -333,6 +370,7 @@ void NavEKF2_core::FuseRngBcnStatic()
         receiverPos.x -= K_RNG[0] * innovRngBcn;
         receiverPos.y -= K_RNG[1] * innovRngBcn;
         receiverPos.z -= K_RNG[2] * innovRngBcn;
+        receiverPos.z = MAX(receiverPos.z, minBcnPosD + 1.2f);
 
         // calculate the covariance correction
         for (unsigned i = 0; i<=2; i++) {
@@ -373,8 +411,14 @@ void NavEKF2_core::FuseRngBcnStatic()
             }
         }
 
-        if (numBcnMeas >= 100) {
+        if (numBcnMeas >= 100 && !rngBcnAlignmentCompleted) {
+            // resolve beacon ambiguity by using the difference betweeen beacon system height and EKF height
+            // to set the initial beacon offset
+            bcnPosOffset = receiverPos.z - stateStruct.position.z;
+            // range beacon posiiton alignment is completed
             rngBcnAlignmentCompleted = true;
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF2 IMU%u beacon alignment at %3.1f,%3.1f,%3.1f (m)",(unsigned)imu_index,receiverPos.x,receiverPos.y,receiverPos.z);
+            GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_INFO, "EKF2 IMU%u initial beacon pos offset %3.1f (m)",(unsigned)imu_index,bcnPosOffset);
         }
     }
 }

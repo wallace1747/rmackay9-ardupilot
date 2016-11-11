@@ -984,6 +984,10 @@ private:
     uint8_t numBcnMeas;                 // Number of beacon measurements - used during initialisation of the 3-state filter
     float rngSum;                       // Sum of range measurements (m) - used during initialisation of the 3-state filter
     uint8_t N_beacons;                  // Number of range beacons in use
+    float maxBcnPosD;                   // maximum position of all beacons in the down direction (m)
+    float minBcnPosD;                   // minimum position of all beacons in the down direction (m)
+    float bcnPosOffset;                 // Vertical position offset of the beacon constellation origin relative to the EKF origin (m)
+    float bcnPosOffsetVar;              // Variance of the bcnPosoffset state (m)
 
     // Range Beacon Fusion Debug Reporting
     uint8_t rngBcnFuseDataReportIndex;// index of range beacon fusion data last reported
