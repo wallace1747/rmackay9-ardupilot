@@ -35,7 +35,17 @@ private:
     uint32_t last_load_ms;
     AC_PolyFence_loader fence_loader;
     Location current_loc;
-    
+
+    // sector variables
+    uint8_t last_sector;    // latest sector updated
+    float _distance[8];     // distance in meters for each sector (0, 45, 90, 135, 180, 225, 270, 315)
+
+    // fence boundary
+    Vector2f _sector_edge_vector[8];    // vector for right-edge of each sector, used to speed up calculation of boundary
+    Vector2f _boundary_point[8];        // bounding polygon around the vehicle calculated conservatively for object avoidance
+
     void load_fence(void);
+
+    void update_boundary_for_sector(uint8_t sector);
 };
 #endif // CONFIG_HAL_BOARD
