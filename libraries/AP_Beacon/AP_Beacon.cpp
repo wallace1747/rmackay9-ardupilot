@@ -79,7 +79,7 @@ AP_Beacon::AP_Beacon(AP_SerialManager &_serial_manager) :
 // initialise the AP_Beacon class
 void AP_Beacon::init(void)
 {
-    if (_driver != NULL) {
+    if (_driver != nullptr) {
         // init called a 2nd time?
         return;
     }
@@ -104,7 +104,7 @@ bool AP_Beacon::enabled(void)
 // return true if sensor is basically healthy (we are receiving data)
 bool AP_Beacon::healthy(void)
 {
-    if (_driver == NULL || _type == AP_BeaconType_None) {
+    if (_driver == nullptr || _type == AP_BeaconType_None) {
         return false;
     }
     return _driver->healthy();
@@ -113,7 +113,7 @@ bool AP_Beacon::healthy(void)
 // update state. This should be called often from the main loop
 void AP_Beacon::update(void)
 {
-    if (_driver == NULL || _type == AP_BeaconType_None) {
+    if (_driver == nullptr || _type == AP_BeaconType_None) {
         return;
     }
     _driver->update();
@@ -122,7 +122,7 @@ void AP_Beacon::update(void)
 // return origin of position estimate system
 bool AP_Beacon::get_origin(Location &origin_loc) const
 {
-    if (_driver == NULL || _type == AP_BeaconType_None) {
+    if (_driver == nullptr || _type == AP_BeaconType_None) {
         return false;
     }
 
@@ -143,7 +143,7 @@ bool AP_Beacon::get_origin(Location &origin_loc) const
 // return position in NED from position estimate system's origin
 bool AP_Beacon::get_vehicle_position_ned(Vector3f &position, float& accuracy_estimate) const
 {
-    if (_driver == NULL || _type == AP_BeaconType_None) {
+    if (_driver == nullptr || _type == AP_BeaconType_None) {
         return false;
     }
 
@@ -161,7 +161,7 @@ bool AP_Beacon::get_vehicle_position_ned(Vector3f &position, float& accuracy_est
 // return the number of beacons
 uint8_t AP_Beacon::count() const
 {
-    if (_driver == NULL || _type == AP_BeaconType_None) {
+    if (_driver == nullptr || _type == AP_BeaconType_None) {
         return 0;
     }
     return num_beacons;
@@ -170,7 +170,7 @@ uint8_t AP_Beacon::count() const
 // return all beacon data
 bool AP_Beacon::get_beacon_data(uint8_t beacon_instance, struct BeaconState& state) const
 {
-    if (_driver == NULL || _type == AP_BeaconType_None || beacon_instance >= num_beacons) {
+    if (_driver == nullptr || _type == AP_BeaconType_None || beacon_instance >= num_beacons) {
         return false;
     }
     state = beacon_state[beacon_instance];
@@ -207,7 +207,7 @@ float AP_Beacon::beacon_distance(uint8_t beacon_instance) const
 // return beacon position
 Vector3f AP_Beacon::beacon_position(uint8_t beacon_instance) const
 {
-    if (_driver == NULL || _type == AP_BeaconType_None || beacon_instance >= num_beacons) {
+    if (_driver == nullptr || _type == AP_BeaconType_None || beacon_instance >= num_beacons) {
         Vector3f temp = {};
         return temp;
     }
