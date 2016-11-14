@@ -721,18 +721,19 @@ void NavEKF2_core::readRngBcnData()
             if (!validOrigin && PV_AidingMode != AID_ABSOLUTE) {
                 // get origin from beacon system
                 Location origin_loc;
-                beacon->get_origin(origin_loc);
-                setOriginLLH(origin_loc);
+                if (beacon->get_origin(origin_loc)) {
+                    setOriginLLH(origin_loc);
 
-                // set the NE earth magnetic field states using the published declination
-                // and set the corresponding variances and covariances
-                alignMagStateDeclination();
+                    // set the NE earth magnetic field states using the published declination
+                    // and set the corresponding variances and covariances
+                    alignMagStateDeclination();
 
-                // Set the height of the NED origin to ‘height of baro height datum relative to GPS height datum'
-                EKF_origin.alt = origin_loc.alt - baroDataNew.hgt;
+                    // Set the height of the NED origin to ‘height of baro height datum relative to GPS height datum'
+                    EKF_origin.alt = origin_loc.alt - baroDataNew.hgt;
 
-                // Set the uncertainty of the origin height
-                ekfOriginHgtVar = sq(beaconVehiclePosErr);
+                    // Set the uncertainty of the origin height
+                    ekfOriginHgtVar = sq(beaconVehiclePosErr);
+                }
             }
         } else {
             rngBcnGoodToAlign = false;
