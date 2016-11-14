@@ -171,14 +171,12 @@ void AP_Proximity_SITL::update_boundary_for_sector(uint8_t sector)
     }
 
     // boundary point lies on the line between the two sectors at the shorter distance found in the two sectors
-    if (_distance_valid[sector] && _distance_valid[next_sector]) {
-        float shortest_distance = MIN(_distance[sector], _distance[next_sector]);
-        _boundary_point[sector] = _sector_edge_vector[sector] * shortest_distance;
-    }
+    float shortest_distance = MIN(_distance[sector], _distance[next_sector]);
+    _boundary_point[sector] = _sector_edge_vector[sector] * shortest_distance;
 
     // repeat for edge between sector and previous sector
     uint8_t prev_sector = (sector == 0) ? 8-1 : sector-1;
-    float shortest_distance = MIN(_distance[prev_sector], _distance[sector]);
+    shortest_distance = MIN(_distance[prev_sector], _distance[sector]);
     _boundary_point[prev_sector] = _sector_edge_vector[prev_sector] * shortest_distance;
 }
 
