@@ -79,6 +79,13 @@ void AP_Proximity_SITL::update(void)
     current_loc.alt = sitl->state.altitude * 1.0e2;
     if (fence && fence_loader.boundary_valid(fence_count->get(), fence, true)) {
         set_status(AP_Proximity::Proximity_Good);
+        // update distance in one sector
+        get_horizontal_distance(last_sector * 45, _distance[last_sector]);
+        update_boundary_for_sector(last_sector);
+        last_sector++;
+        if (last_sector >= 8) {
+            last_sector = 0;
+        }
     } else {
         set_status(AP_Proximity::Proximity_NoData);        
     }
@@ -103,18 +110,76 @@ void AP_Proximity_SITL::load_fence(void)
     }
 }
 
-// get boundary points around vehicle for use by avoidance
-//   returns nullptr and sets num_points to zero if no boundary can be returned
-const Vector2f* AP_Proximity_SITL::get_boundary_points(uint16_t& num_points) const
-{
-    return nullptr;
-}
-
 // get distance and angle to closest object (used for pre-arm check)
 //   returns true on success, false if no valid readings
 bool AP_Proximity_SITL::get_closest_object(float& angle_deg, float &distance) const
 {
-    return false;
+    bool sector_found = false;
+    uint8_t sector = 0;
+
+    // check all sectors for shorter distance
+    for (uint8_t i=0; i<8; i++) {
+        if (!sector_found || (_distance[i] < _distance[sector])) {
+            sector = i;
+            sector_found = true;
+        }
+    }
+
+    if (sector_found) {
+        angle_deg = sector * 45;
+        distance = _distance[sector];
+    }
+    return sector_found;
+}
+
+// get boundary points around vehicle for use by avoidance
+//   returns nullptr and sets num_points to zero if no boundary can be returned
+const Vector2f* AP_Proximity_SITL::get_boundary_points(uint16_t& num_points) const
+{
+    // high-level status check
+    if (state.status != AP_Proximity::Proximity_Good) {
+        num_points = 0;
+        return nullptr;
+    }
+
+    // return boundary points
+    num_points = 8;
+    return _boundary_point;
+}
+
+// update boundary points used for object avoidance based on a single sector's distance changing
+//   the boundary points lie on the line between sectors meaning two boundary points may be updated based on a single sector's distance changing
+//   the boundary point is set to the shortest distance found in the two adjacent sectors, this is a conservative boundary around the vehicle
+void AP_Proximity_SITL::update_boundary_for_sector(uint8_t sector)
+{
+    // sanity check
+    if (sector >= 8) {
+        return;
+    }
+
+    // initialise sector_edge_vector if necessary
+    if (_sector_edge_vector[sector].is_zero()) {
+        float angle_rad = radians((45.0f * sector) - 22.5f);
+        _sector_edge_vector[sector].x = cosf(angle_rad);
+        _sector_edge_vector[sector].y = sinf(angle_rad);
+    }
+
+    // find adjacent sector (clockwise)
+    uint8_t next_sector = sector + 1;
+    if (next_sector >= 8) {
+        next_sector = 0;
+    }
+
+    // boundary point lies on the line between the two sectors at the shorter distance found in the two sectors
+    if (_distance_valid[sector] && _distance_valid[next_sector]) {
+        float shortest_distance = MIN(_distance[sector], _distance[next_sector]);
+        _boundary_point[sector] = _sector_edge_vector[sector] * shortest_distance;
+    }
+
+    // repeat for edge between sector and previous sector
+    uint8_t prev_sector = (sector == 0) ? 8-1 : sector-1;
+    float shortest_distance = MIN(_distance[prev_sector], _distance[sector]);
+    _boundary_point[prev_sector] = _sector_edge_vector[prev_sector] * shortest_distance;
 }
 
 #endif // CONFIG_HAL_BOARD
