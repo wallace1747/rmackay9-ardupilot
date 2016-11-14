@@ -102,4 +102,19 @@ void AP_Proximity_SITL::load_fence(void)
         fence_loader.load_point_from_eeprom(i, fence[i]);
     }
 }
+
+// get boundary points around vehicle for use by avoidance
+//   returns nullptr and sets num_points to zero if no boundary can be returned
+const Vector2f* AP_Proximity_SITL::get_boundary_points(uint16_t& num_points) const
+{
+    return nullptr;
+}
+
+// get distance and angle to closest object (used for pre-arm check)
+//   returns true on success, false if no valid readings
+bool AP_Proximity_SITL::get_closest_object(float& angle_deg, float &distance) const
+{
+    return false;
+}
+
 #endif // CONFIG_HAL_BOARD
