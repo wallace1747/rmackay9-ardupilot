@@ -43,103 +43,6 @@ bool AP_Proximity_LightWareSF40C::detect(AP_SerialManager &serial_manager)
     return serial_manager.find_serial(AP_SerialManager::SerialProtocol_Lidar360, 0) != nullptr;
 }
 
-// get distance in meters in a particular direction in degrees (0 is forward, angles increase in the clockwise direction)
-bool AP_Proximity_LightWareSF40C::get_horizontal_distance(float angle_deg, float &distance) const
-{
-    uint8_t sector;
-    if (convert_angle_to_sector(angle_deg, sector)) {
-        if (_distance_valid[sector]) {
-            distance = _distance[sector];
-            return true;
-        }
-    }
-    return false;
-}
-
-// get distance and angle to closest object (used for pre-arm check)
-//   returns true on success, false if no valid readings
-bool AP_Proximity_LightWareSF40C::get_closest_object(float& angle_deg, float &distance) const
-{
-    bool sector_found = false;
-    uint8_t sector = 0;
-
-    // check all sectors for shorter distance
-    for (uint8_t i=0; i<_num_sectors; i++) {
-        if (_distance_valid[i]) {
-            if (!sector_found || (_distance[i] < _distance[sector])) {
-                sector = i;
-                sector_found = true;
-            }
-        }
-    }
-
-    if (sector_found) {
-        angle_deg = _angle[sector];
-        distance = _distance[sector];
-    }
-    return sector_found;
-}
-
-// get boundary points around vehicle for use by avoidance
-//   returns nullptr and sets num_points to zero if no boundary can be returned
-const Vector2f* AP_Proximity_LightWareSF40C::get_boundary_points(uint16_t& num_points) const
-{
-    // high-level status check
-    if (state.status != AP_Proximity::Proximity_Good) {
-        num_points = 0;
-        return nullptr;
-    }
-
-    // check all sectors have valid data, if not, exit
-    for (uint8_t i=0; i<_num_sectors; i++) {
-        if (!_distance_valid[i]) {
-            num_points = 0;
-            return nullptr;
-        }
-    }
-
-    // return boundary points
-    num_points = _num_sectors;
-    return _boundary_point;
-}
-
-// update boundary points used for object avoidance based on a single sector's distance changing
-//   the boundary points lie on the line between sectors meaning two boundary points may be updated based on a single sector's distance changing
-//   the boundary point is set to the shortest distance found in the two adjacent sectors, this is a conservative boundary around the vehicle
-void AP_Proximity_LightWareSF40C::update_boundary_for_sector(uint8_t sector)
-{
-    // sanity check
-    if (sector >= _num_sectors) {
-        return;
-    }
-
-    // initialise sector_edge_vector if necessary
-    if (_sector_edge_vector[sector].is_zero()) {
-        float angle_rad = radians((float)_sector_middle_deg[sector]+(float)_sector_width_deg[sector]/2.0f);
-        _sector_edge_vector[sector].x = cosf(angle_rad) * 100.0f;
-        _sector_edge_vector[sector].y = sinf(angle_rad) * 100.0f;
-    }
-
-    // find adjacent sector (clockwise)
-    uint8_t next_sector = sector + 1;
-    if (next_sector >= _num_sectors) {
-        next_sector = 0;
-    }
-
-    // boundary point lies on the line between the two sectors at the shorter distance found in the two sectors
-    if (_distance_valid[sector] && _distance_valid[next_sector]) {
-        float shortest_distance = MIN(_distance[sector], _distance[next_sector]);
-        _boundary_point[sector] = _sector_edge_vector[sector] * shortest_distance;
-    }
-
-    // repeat for edge between sector and previous sector
-    uint8_t prev_sector = (sector == 0) ? _num_sectors-1 : sector-1;
-    if (_distance_valid[prev_sector] && _distance_valid[sector]) {
-        float shortest_distance = MIN(_distance[prev_sector], _distance[sector]);
-        _boundary_point[prev_sector] = _sector_edge_vector[prev_sector] * shortest_distance;
-    }
-}
-
 // update the state of the sensor
 void AP_Proximity_LightWareSF40C::update(void)
 {
@@ -222,7 +125,7 @@ void AP_Proximity_LightWareSF40C::init_sectors()
             int16_t degrees_to_fill = wrap_360(end_angle - start_angle);
 
             // divide up the area into sectors
-            while ((degrees_to_fill > 0) && (sector < PROXIMITY_SF40C_SECTORS_MAX)) {
+            while ((degrees_to_fill > 0) && (sector < PROXIMITY_SECTORS_MAX)) {
                 uint16_t sector_size;
                 if (degrees_to_fill >= 90) {
                     // set sector to maximum of 45 degrees
@@ -523,46 +426,4 @@ void AP_Proximity_LightWareSF40C::clear_buffers()
     element_len[1] = 0;
     element_num = 0;
     memset(element_buf, 0, sizeof(element_buf));
-}
-
-bool AP_Proximity_LightWareSF40C::convert_angle_to_sector(float angle_degrees, uint8_t &sector) const
-{
-    // sanity check angle
-    if (angle_degrees > 360.0f || angle_degrees < -180.0f) {
-        return false;
-    }
-
-    // convert to 0 ~ 360
-    if (angle_degrees < 0.0f) {
-        angle_degrees += 360.0f;
-    }
-
-    bool closest_found = false;
-    uint8_t closest_sector;
-    float closest_angle;
-
-    // search for which sector angle_degrees falls into
-    for (uint8_t i = 0; i < _num_sectors; i++) {
-        float angle_diff = fabsf(wrap_180(_sector_middle_deg[i] - angle_degrees));
-
-        // record if closest
-        if (!closest_found || angle_diff < closest_angle) {
-            closest_found = true;
-            closest_sector = i;
-            closest_angle = angle_diff;
-        }
-
-        if (fabsf(angle_diff) <= _sector_width_deg[i] / 2.0f) {
-            sector = i;
-            return true;
-        }
-    }
-
-    // angle_degrees might have been within a gap between sectors
-    if (closest_found) {
-        sector = closest_sector;
-        return true;
-    }
-
-    return false;
 }
