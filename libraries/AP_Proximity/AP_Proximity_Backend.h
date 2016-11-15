@@ -48,8 +48,8 @@ protected:
     // set status and update valid_count
     void set_status(AP_Proximity::Proximity_Status status);
 
-    // get ignore angle info
-    uint8_t get_ignore_angle_count() const;
+    // get ignore area info
+    uint8_t get_ignore_area_count() const;
     bool get_ignore_area(uint8_t index, uint16_t &angle_deg, uint8_t &width_deg) const;
     bool get_next_ignore_start_or_end(uint8_t start_or_end, int16_t start_angle, int16_t &ignore_start) const;
 

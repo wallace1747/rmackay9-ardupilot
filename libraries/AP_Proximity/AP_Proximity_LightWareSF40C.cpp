@@ -200,7 +200,7 @@ bool AP_Proximity_LightWareSF40C::initialise()
 void AP_Proximity_LightWareSF40C::init_sectors()
 {
     // use defaults if no ignore areas defined
-    uint8_t ignore_area_count = get_ignore_angle_count();
+    uint8_t ignore_area_count = get_ignore_area_count();
     if (ignore_area_count == 0) {
         _sector_initialised = true;
         return;

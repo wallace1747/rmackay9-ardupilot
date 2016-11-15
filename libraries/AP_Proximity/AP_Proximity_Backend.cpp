@@ -35,8 +35,8 @@ void AP_Proximity_Backend::set_status(AP_Proximity::Proximity_Status status)
     state.status = status;
 }
 
-// get ignore angle info
-uint8_t AP_Proximity_Backend::get_ignore_angle_count() const
+// get ignore area info
+uint8_t AP_Proximity_Backend::get_ignore_area_count() const
 {
     // count number of ignore sectors
     uint8_t count = 0;
