@@ -665,18 +665,19 @@ void NavEKF2_core::readRngBcnData()
     bool newDataToPush = false;
     uint8_t numRngBcnsChecked = 0;
     // start the search one index up from where we left it last time
-    uint8_t index = lastRngBcnChecked + 1;
+    uint8_t index = lastRngBcnChecked;
     while (!newDataToPush && numRngBcnsChecked < N_beacons) {
         // track the number of beacons checked
         numRngBcnsChecked++;
 
-        // wrap search index
+        // move to next beacon, wrap index if necessary
+        index++;
         if (index >= N_beacons) {
             index = 0;
         }
 
         // check that the beacon is healthy and has new data
-        if (beacon &&
+        if (beacon != nullptr &&
                 beacon->beacon_healthy(index) &&
                 beacon->beacon_last_update_ms(index) != lastTimeRngBcn_ms[index])
         {
@@ -706,7 +707,7 @@ void NavEKF2_core::readRngBcnData()
     }
 
     // Check if the beacon system has returned a 3D fix
-    if (beacon && beacon->get_vehicle_position_ned(beaconVehiclePosNED, beaconVehiclePosErr)) {
+    if (beacon != nullptr && beacon->get_vehicle_position_ned(beaconVehiclePosNED, beaconVehiclePosErr)) {
         rngBcnLast3DmeasTime_ms = imuSampleTime_ms;
     }
 
