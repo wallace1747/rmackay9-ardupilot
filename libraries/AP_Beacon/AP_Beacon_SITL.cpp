@@ -24,7 +24,8 @@
 extern const AP_HAL::HAL& hal;
 
 #define NUM_BEACONS 4
-#define ORIGIN_DISTANCE 10
+#define ORIGIN_DISTANCE_EAST 20
+#define ORIGIN_DISTANCE_NORTH 10
 
 // constructor
 AP_Beacon_SITL::AP_Beacon_SITL(AP_Beacon &frontend) :
@@ -59,16 +60,16 @@ void AP_Beacon_SITL::update(void)
     beacon_loc.alt += 120; // this is a hack to replicate the placement of beacons on tripods
     switch (beacon_id) {
     case 0:
-        location_offset(beacon_loc, ORIGIN_DISTANCE, -ORIGIN_DISTANCE);
+        location_offset(beacon_loc, 0, 0);
         break;
     case 1:
-        location_offset(beacon_loc, ORIGIN_DISTANCE, ORIGIN_DISTANCE);
+        location_offset(beacon_loc, 0, ORIGIN_DISTANCE_EAST);
         break;
     case 2:
-        location_offset(beacon_loc, -ORIGIN_DISTANCE, ORIGIN_DISTANCE);
+        location_offset(beacon_loc, ORIGIN_DISTANCE_NORTH, 0);
         break;
     case 3:
-        location_offset(beacon_loc, -ORIGIN_DISTANCE, -ORIGIN_DISTANCE);
+        location_offset(beacon_loc, ORIGIN_DISTANCE_NORTH, ORIGIN_DISTANCE_EAST);
         break;
     }
 
