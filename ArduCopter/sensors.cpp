@@ -39,11 +39,19 @@ void Copter::read_rangefinder(void)
 #if RANGEFINDER_ENABLED == ENABLED
     rangefinder.update();
 
+    // log sensor data
     if (rangefinder.num_sensors() > 0 &&
         should_log(MASK_LOG_CTUN)) {
         DataFlash.Log_Write_RFND(rangefinder);
     }
-    
+
+    // log sensor health
+    if (rangefinder_state.healthy != rangefinder.has_data()) {
+        rangefinder_state.healthy = rangefinder.has_data();
+        Log_Write_Error(ERROR_SUBSYSTEM_RANGEFINDER, (rangefinder_state.healthy ? ERROR_CODE_ERROR_RESOLVED : ERROR_CODE_UNHEALTHY));
+    }
+
+    // determine if altitude is usable
     rangefinder_state.alt_healthy = ((rangefinder.status() == RangeFinder::RangeFinder_Good) && (rangefinder.range_valid_count() >= RANGEFINDER_HEALTH_MAX));
 
     int16_t temp_alt = rangefinder.distance_cm();
@@ -73,6 +81,7 @@ void Copter::read_rangefinder(void)
 
 #else
     rangefinder_state.enabled = false;
+    rangefinder_state.healthy = false;
     rangefinder_state.alt_healthy = false;
     rangefinder_state.alt_cm = 0;
 #endif

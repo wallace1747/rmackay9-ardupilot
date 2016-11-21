@@ -191,11 +191,12 @@ private:
     RangeFinder rangefinder {serial_manager};
     struct {
         bool enabled:1;
+        bool healthy:1;     // true if sonar is healthy and returning data (only used for logging)
         bool alt_healthy:1; // true if we can trust the altitude from the rangefinder
         int16_t alt_cm;     // tilt compensated altitude (in cm) from rangefinder
         uint32_t last_healthy_ms;
         LowPassFilterFloat alt_cm_filt; // altitude filter
-    } rangefinder_state = { false, false, 0, 0 };
+    } rangefinder_state = { false, false, false, 0, 0 };
 
     AP_RPM rpm_sensor;
 
