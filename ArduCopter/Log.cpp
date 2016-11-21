@@ -785,7 +785,7 @@ void Copter::Log_Write_Proximity()
     struct log_Proximity pkt = {
         LOG_PACKET_HEADER_INIT(LOG_PROXIMITY_MSG),
         time_us         : AP_HAL::micros64(),
-        health          : (uint8_t)g2.proximity.get_status(),
+        health          : (uint8_t)(g2.proximity.get_status() == AP_Proximity::Proximity_Good),
         dist0           : sector_distance[0],
         dist45          : sector_distance[1],
         dist90          : sector_distance[2],
