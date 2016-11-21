@@ -410,6 +410,7 @@ enum DevOptions {
 #define ERROR_SUBSYSTEM_FAILSAFE_TERRAIN    23
 #define ERROR_SUBSYSTEM_EKF_PRIMARY         24
 #define ERROR_SUBSYSTEM_RANGEFINDER         25
+#define ERROR_SUBSYSTEM_PROXIMITY           26
 // general error codes
 #define ERROR_CODE_ERROR_RESOLVED           0
 #define ERROR_CODE_FAILED_TO_INITIALISE     1

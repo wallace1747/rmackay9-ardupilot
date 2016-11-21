@@ -322,6 +322,7 @@ private:
     struct {
         uint8_t baro        : 1;    // true if baro is healthy
         uint8_t compass     : 1;    // true if compass is healthy
+        uint8_t proximity   : 1;    // true if proximity sensor is healthy
     } sensor_health;
 
     // setup FRAME_MAV_TYPE

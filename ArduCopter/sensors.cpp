@@ -276,6 +276,13 @@ void Copter::update_proximity(void)
 {
 #if PROXIMITY_ENABLED == ENABLED
     g2.proximity.update();
+
+    // log sensor health
+    bool proximity_healthy = (copter.g2.proximity.get_status() == AP_Proximity::Proximity_Good);
+    if (sensor_health.proximity != proximity_healthy) {
+        sensor_health.proximity = proximity_healthy;
+        Log_Write_Error(ERROR_SUBSYSTEM_PROXIMITY, (sensor_health.proximity ? ERROR_CODE_ERROR_RESOLVED : ERROR_CODE_UNHEALTHY));
+    }
 #endif
 }
 
