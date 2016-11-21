@@ -624,6 +624,11 @@ bool NavEKF2::InitialiseFilter(void)
         ret &= core[i].InitialiseFilterBootstrap();
     }
 
+    // zero the structs used capture reset events
+    memset(&yaw_reset_data, 0, sizeof(yaw_reset_data));
+    memset(&pos_reset_data, 0, sizeof(pos_reset_data));
+    memset(&pos_down_reset_data, 0, sizeof(pos_down_reset_data));
+
     check_log_write();
     return ret;
 }
