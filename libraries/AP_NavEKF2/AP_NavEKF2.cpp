@@ -684,6 +684,7 @@ void NavEKF2::UpdateFilter(void)
         if (newPrimaryIndex != primary) {
             updateLaneSwitchYawResetData(has_switched, newPrimaryIndex, primary);
             updateLaneSwitchPosResetData(has_switched, newPrimaryIndex, primary);
+            updateLaneSwitchPosDownResetData(has_switched, newPrimaryIndex, primary);
             primary = newPrimaryIndex;
             has_switched = true;
         }
@@ -1255,6 +1256,37 @@ const char *NavEKF2::prearm_failure_reason(void) const
     return core[primary].prearm_failure_reason();
 }
 
+// return the amount of vertical position change due to the last reset in metres
+// returns the time of the last reset or 0 if no reset has ever occurred
+uint32_t NavEKF2::getLastPosDownReset(float &posDelta)
+{
+    if (!core) {
+        return 0;
+    }
+
+    // Record last time controller got the position reset
+    pos_down_reset_data.last_function_call = imuSampleTime_us / 1000;
+    posDelta = 0.0f;
+    uint32_t lastPosReset_ms = 0;
+    float tempPosDelta;
+    uint32_t lastCorePosReset_ms = core[primary].getLastPosDownReset(tempPosDelta);
+
+    // If core has changed (and data not consumed yet) or if the core change was the last position reset, return its data
+    if (pos_down_reset_data.core_changed || lastCorePosReset_ms <= pos_down_reset_data.last_primary_change) {
+        posDelta = pos_down_reset_data.core_delta;
+        lastPosReset_ms = pos_down_reset_data.last_primary_change;
+        pos_down_reset_data.core_changed = false;
+    }
+
+    // If current core position reset event was the last one, add it to the delta
+    if (lastCorePosReset_ms > lastPosReset_ms) {
+        posDelta = posDelta + tempPosDelta;
+        lastPosReset_ms = lastCorePosReset_ms;
+    }
+
+    return lastPosReset_ms;
+}
+
 // update the yaw reset data to capture changes due to a lane switch
 void NavEKF2::updateLaneSwitchYawResetData(bool has_switched, uint8_t new_primary, uint8_t old_primary)
 {
@@ -1305,6 +1337,31 @@ void NavEKF2::updateLaneSwitchPosResetData(bool has_switched, uint8_t new_primar
     pos_reset_data.core_delta = pos_new_primary - pos_old_primary + pos_reset_data.core_delta;
     pos_reset_data.last_primary_change = imuSampleTime_us / 1000;
     pos_reset_data.core_changed = true;
+}
+
+// update the vertical position reset data to capture changes due to a lane switch
+void NavEKF2::updateLaneSwitchPosDownResetData(bool has_switched, uint8_t new_primary, uint8_t old_primary)
+{
+    float posDownOldPrimary, posDownNewPrimary, oldPosDownDelta;
+
+    // If core position reset data has been consumed reset delta to zero
+    if (!pos_down_reset_data.core_changed) {
+        pos_down_reset_data.core_delta = 0.0f;
+    }
+
+    // If current primary has reset position after controller got it, add it to the delta
+    // Prevent adding the delta if we have already changed primary in this filter update
+    if (!has_switched && core[old_primary].getLastPosDownReset(oldPosDownDelta) > pos_down_reset_data.last_function_call) {
+        pos_down_reset_data.core_delta += oldPosDownDelta;
+    }
+
+    // Record the position delta between current core and new primary core and the timestamp of the core change
+    // Add current delta in case it hasn't been consumed yet
+    core[old_primary].getLastPosDownReset(posDownOldPrimary);
+    core[new_primary].getLastPosDownReset(posDownNewPrimary);
+    pos_down_reset_data.core_delta = posDownNewPrimary - posDownOldPrimary + pos_down_reset_data.core_delta;
+    pos_down_reset_data.last_primary_change = imuSampleTime_us / 1000;
+    pos_down_reset_data.core_changed = true;
 }
 
 #endif //HAL_CPU_CLASS
