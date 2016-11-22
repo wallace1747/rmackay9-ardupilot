@@ -323,7 +323,7 @@ private:
         uint8_t baro        : 1;    // true if baro is healthy
         uint8_t compass     : 1;    // true if compass is healthy
         uint8_t proximity   : 1;    // true if proximity sensor is healthy
-    } sensor_health;
+    } sensor_health = {true, true, false};
 
     // setup FRAME_MAV_TYPE
 #if (FRAME_CONFIG == QUAD_FRAME)
