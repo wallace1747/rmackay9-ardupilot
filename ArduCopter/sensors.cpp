@@ -49,6 +49,7 @@ void Copter::read_rangefinder(void)
     if (rangefinder_state.healthy != rangefinder.has_data()) {
         rangefinder_state.healthy = rangefinder.has_data();
         Log_Write_Error(ERROR_SUBSYSTEM_RANGEFINDER, (rangefinder_state.healthy ? ERROR_CODE_ERROR_RESOLVED : ERROR_CODE_UNHEALTHY));
+        ::printf("RNG ERR %d %d\n",(int)ERROR_SUBSYSTEM_RANGEFINDER, (int)(rangefinder_state.healthy ? ERROR_CODE_ERROR_RESOLVED : ERROR_CODE_UNHEALTHY));
     }
 
     // determine if altitude is usable
@@ -282,6 +283,7 @@ void Copter::update_proximity(void)
     if (sensor_health.proximity != proximity_healthy) {
         sensor_health.proximity = proximity_healthy;
         Log_Write_Error(ERROR_SUBSYSTEM_PROXIMITY, (sensor_health.proximity ? ERROR_CODE_ERROR_RESOLVED : ERROR_CODE_UNHEALTHY));
+        ::printf("PRX ERR %d %d\n",(int)ERROR_SUBSYSTEM_PROXIMITY, (int)(sensor_health.proximity ? ERROR_CODE_ERROR_RESOLVED : ERROR_CODE_UNHEALTHY));
     }
 #endif
 }
