@@ -8,6 +8,7 @@
 #define AP_BEACON_POZYX_MSGID_BEACON_CONFIG 0x02    // message contains anchor config information
 #define AP_BEACON_POZYX_MSGID_BEACON_DIST   0x03    // message contains individual beacon distance
 #define AP_BEACON_POZYX_MSGID_POSITION      0x04    // message contains vehicle position information
+#define AP_BEACON_DISTANCE_MAX              200.0f  // sanity check beacon and vehicle messages to be within this distance from origin
 
 class AP_Beacon_Pozyx : public AP_Beacon_Backend
 {

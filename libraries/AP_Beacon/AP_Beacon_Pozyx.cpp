@@ -129,8 +129,11 @@ void AP_Beacon_Pozyx::parse_buffer()
                 int32_t beacon_x = (uint32_t)linebuf[5] << 24 | (uint32_t)linebuf[4] << 16 | (uint32_t)linebuf[3] << 8 | (uint32_t)linebuf[2];
                 int32_t beacon_y = (uint32_t)linebuf[9] << 24 | (uint32_t)linebuf[8] << 16 | (uint32_t)linebuf[7] << 8 | (uint32_t)linebuf[6];
                 int32_t beacon_z = (uint32_t)linebuf[13] << 24 | (uint32_t)linebuf[12] << 16 | (uint32_t)linebuf[11] << 8 | (uint32_t)linebuf[10];
-                set_beacon_position(beacon_id, Vector3f(beacon_x / 1000.0f, beacon_y / 1000.0f, beacon_z / 1000.0f));
-                parsed = true;
+                Vector3f beacon_pos(beacon_x / 1000.0f, beacon_y / 1000.0f, beacon_z / 1000.0f);
+                if (beacon_pos.length() <= AP_BEACON_DISTANCE_MAX) {
+                    set_beacon_position(beacon_id, beacon_pos);
+                    parsed = true;
+                }
             }
             break;
 
@@ -138,8 +141,11 @@ void AP_Beacon_Pozyx::parse_buffer()
             {
                 uint8_t beacon_id = linebuf[0];
                 uint32_t beacon_distance = (uint32_t)linebuf[4] << 24 | (uint32_t)linebuf[3] << 16 | (uint32_t)linebuf[2] << 8 | (uint32_t)linebuf[1];
-                set_beacon_distance(beacon_id, beacon_distance / 1000.0f);
-                parsed = true;
+                float beacon_dist = beacon_distance/1000.0f;
+                if (beacon_dist <= AP_BEACON_DISTANCE_MAX) {
+                    set_beacon_distance(beacon_id, beacon_dist);
+                    parsed = true;
+                }
             }
             break;
 
@@ -149,8 +155,11 @@ void AP_Beacon_Pozyx::parse_buffer()
                 int32_t vehicle_y = (uint32_t)linebuf[7] << 24 | (uint32_t)linebuf[6] << 16 | (uint32_t)linebuf[5] << 8 | (uint32_t)linebuf[4];
                 int32_t vehicle_z = (uint32_t)linebuf[11] << 24 | (uint32_t)linebuf[10] << 16 | (uint32_t)linebuf[9] << 8 | (uint32_t)linebuf[8];
                 int16_t position_error = (uint32_t)linebuf[13] << 8 | (uint32_t)linebuf[12];
-                set_vehicle_position(Vector3f(vehicle_x / 1000.0f, vehicle_y / 1000.0f, vehicle_z / 1000.0f), position_error);
-                parsed = true;
+                Vector3f veh_pos(Vector3f(vehicle_x / 1000.0f, vehicle_y / 1000.0f, vehicle_z / 1000.0f));
+                if (veh_pos.length() <= AP_BEACON_DISTANCE_MAX) {
+                    set_vehicle_position(veh_pos, position_error);
+                    parsed = true;
+                }
             }
             break;
 
