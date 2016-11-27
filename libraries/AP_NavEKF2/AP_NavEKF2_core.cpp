@@ -46,6 +46,7 @@ NavEKF2_core::NavEKF2_core(void) :
     _perf_test[7] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_Test7");
     _perf_test[8] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_Test8");
     _perf_test[9] = hal.util->perf_alloc(AP_HAL::Util::PC_ELAPSED, "EK2_Test9");
+    InitialiseVariables();
 }
 
 // setup this core backend
@@ -334,7 +335,7 @@ bool NavEKF2_core::InitialiseFilterBootstrap(void)
         return false;
     }
 
-    // set re-used variables to zero
+    // set re-used variables to zero - this is done it the constructor, but we do it again here to allow for re-start
     InitialiseVariables();
 
     // Initialise IMU data
