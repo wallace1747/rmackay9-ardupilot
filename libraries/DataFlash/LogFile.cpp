@@ -10,6 +10,7 @@
 #include <AP_Motors/AP_Motors.h>
 #include <AC_AttitudeControl/AC_AttitudeControl.h>
 #include <AC_AttitudeControl/AC_PosControl.h>
+#include <stdio.h>
 
 #include "DataFlash.h"
 #include "DataFlash_SITL.h"
@@ -1395,6 +1396,30 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
         float bcnPosOffsetHigh;
         float bcnPosOffsetLow;
         ahrs.get_NavEKF2().getRangeBeaconDebug(-1, ID, rng, innov, innovVar, testRatio, beaconPosNED, bcnPosOffsetHigh, bcnPosOffsetLow);
+        if (isnan(ID)) {
+            ::printf("ID is bad");
+        }
+        if (isnan(rng)) {
+            ::printf("rng is bad");
+        }
+        if (isnan(innov)) {
+            ::printf("innov is bad");
+        }
+        if (isnan(innovVar)) {
+            ::printf("innovVar is bad");
+        }
+        if (isnan(testRatio)) {
+            ::printf("testRatio is bad");
+        }
+        if (isnan(beaconPosNED.x) || isnan(beaconPosNED.y) || isnan(beaconPosNED.z)) {
+            ::printf("beaconPosNED is bad");
+        }
+        if (isnan(bcnPosOffsetHigh)) {
+            ::printf("bcnPosOffsetHigh is bad");
+        }
+        if (isnan(bcnPosOffsetLow)) {
+            ::printf("bcnPosOffsetLow is bad");
+        }
         if (rng > 0.0f) {
             struct log_RngBcnDebug pkt10 = {
                 LOG_PACKET_HEADER_INIT(LOG_NKF10_MSG),
