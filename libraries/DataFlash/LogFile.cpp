@@ -1395,7 +1395,7 @@ void DataFlash_Class::Log_Write_EKF2(AP_AHRS_NavEKF &ahrs, bool optFlowEnabled)
         float bcnPosOffsetHigh;
         float bcnPosOffsetLow;
         ahrs.get_NavEKF2().getRangeBeaconDebug(-1, ID, rng, innov, innovVar, testRatio, beaconPosNED, bcnPosOffsetHigh, bcnPosOffsetLow);
-        if (!isnan(rng) && (rng > 0.0f) && !isnan(innov) && !isnan(innovVar) && !isnan(testRatio) && !isnan(bcnPosOffsetHigh) && !isnan(bcnPosOffsetLow)) {
+        if (rng > 0.0f) {
             struct log_RngBcnDebug pkt10 = {
                 LOG_PACKET_HEADER_INIT(LOG_NKF10_MSG),
                 time_us : time_us,
