@@ -111,9 +111,13 @@ bool NavEKF2_core::setup_core(NavEKF2 *_frontend, uint8_t _imu_index, uint8_t _c
 void NavEKF2_core::InitialiseVariables()
 {
     // calculate the nominal filter update rate
-    const AP_InertialSensor &ins = _ahrs->get_ins();
-    localFilterTimeStep_ms = (uint8_t)(1000*ins.get_loop_delta_t());
-    localFilterTimeStep_ms = MAX(localFilterTimeStep_ms,10);
+    if (_ahrs != nullptr) {
+        const AP_InertialSensor &ins = _ahrs->get_ins();
+        localFilterTimeStep_ms = (uint8_t)(1000*ins.get_loop_delta_t());
+        localFilterTimeStep_ms = MAX(localFilterTimeStep_ms,10);
+    } else {
+        localFilterTimeStep_ms = 10;
+    }
 
     // initialise time stamps
     imuSampleTime_ms = frontend->imuSampleTime_us / 1000;
