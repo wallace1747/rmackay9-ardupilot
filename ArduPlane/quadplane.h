@@ -307,14 +307,6 @@ private:
         bool slow_descent:1;
     } poscontrol;
 
-    enum frame_class {
-        FRAME_CLASS_QUAD=0,
-        FRAME_CLASS_HEXA=1,
-        FRAME_CLASS_OCTA=2,
-        FRAME_CLASS_OCTAQUAD=3,
-        FRAME_CLASS_Y6=4,
-    };
-
     struct {
         bool running;
         uint32_t start_ms;            // system time the motor test began

@@ -212,9 +212,9 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Param: FRAME_CLASS
     // @DisplayName: Frame Class
     // @Description: Controls major frame class for multicopter component
-    // @Values: 0:Quad, 1:Hexa, 2:Octa, 3:OctaQuad, 4:Y6
+    // @Values: 0:Undefined, 1:Quad, 2:Hexa, 3:Octa, 4:OctaQuad, 5:Y6, 7:Tri
     // @User: Standard
-    AP_GROUPINFO("FRAME_CLASS", 30, QuadPlane, frame_class, 0),
+    AP_GROUPINFO("FRAME_CLASS", 30, QuadPlane, frame_class, 1),
 #endif
 
     // @Param: FRAME_TYPE
@@ -387,26 +387,23 @@ bool QuadPlane::setup(void)
       that the objects don't affect the vehicle unless enabled and
       also saves memory when not in use
      */
-    switch ((enum frame_class)frame_class.get()) {
-    case FRAME_CLASS_QUAD:
+    switch ((enum AP_Motors::motor_frame_class)frame_class.get()) {
+    case AP_Motors::MOTOR_FRAME_QUAD:
         setup_default_channels(4);
-        motors = new AP_MotorsQuad(plane.scheduler.get_loop_rate_hz());
+        motors = new AP_MotorsMatrix(plane.scheduler.get_loop_rate_hz());
         break;
-    case FRAME_CLASS_HEXA:
+    case AP_Motors::MOTOR_FRAME_HEXA:
         setup_default_channels(6);
-        motors = new AP_MotorsHexa(plane.scheduler.get_loop_rate_hz());
+        motors = new AP_MotorsMatrix(plane.scheduler.get_loop_rate_hz());
         break;
-    case FRAME_CLASS_OCTA:
+    case AP_Motors::MOTOR_FRAME_OCTA:
+    case AP_Motors::MOTOR_FRAME_OCTAQUAD:
         setup_default_channels(8);
-        motors = new AP_MotorsOcta(plane.scheduler.get_loop_rate_hz());
+        motors = new AP_MotorsMatrix(plane.scheduler.get_loop_rate_hz());
         break;
-    case FRAME_CLASS_OCTAQUAD:
-        setup_default_channels(8);
-        motors = new AP_MotorsOctaQuad(plane.scheduler.get_loop_rate_hz());
-        break;
-    case FRAME_CLASS_Y6:
+    case AP_Motors::MOTOR_FRAME_Y6:
         setup_default_channels(7);
-        motors = new AP_MotorsY6(plane.scheduler.get_loop_rate_hz());
+        motors = new AP_MotorsMatrix(plane.scheduler.get_loop_rate_hz());
         break;
     default:
         hal.console->printf("Unknown frame class %u\n", (unsigned)frame_class.get());
@@ -441,7 +438,7 @@ bool QuadPlane::setup(void)
     }
     AP_Param::load_object_from_eeprom(wp_nav, wp_nav->var_info);
 
-    motors->set_frame_orientation(frame_type);
+    motors->set_frame_class_and_type((AP_Motors::motor_frame_class)frame_class.get(), (AP_Motors::motor_frame_type)frame_type.get());
     motors->Init();
     motors->set_throttle_range(thr_min_pwm, thr_max_pwm);
     motors->set_update_rate(rc_speed);
