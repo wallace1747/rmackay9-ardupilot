@@ -51,16 +51,16 @@ void AP_MotorsMatrix::set_update_rate( uint16_t speed_hz )
     rc_set_freq( mask, _speed_hz );
 }
 
-// set frame orientation (normally + or X)
-void AP_MotorsMatrix::set_frame_orientation( uint8_t new_orientation )
+// set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
+void AP_MotorsMatrix::set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type)
 {
-    // return if nothing has changed
-    if( new_orientation == _flags.frame_orientation ) {
+    // exit immediately if no change
+    if (frame_class == _frame_class && _frame_type == frame_type) {
         return;
     }
 
-    // call parent
-    AP_Motors::set_frame_orientation( new_orientation );
+    _frame_class = frame_class;
+    _frame_type = frame_type;
 
     // setup the motors
     setup_motors();

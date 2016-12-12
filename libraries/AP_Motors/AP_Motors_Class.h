@@ -38,14 +38,38 @@
 class AP_Motors {
 public:
 
+    enum motor_frame_class {
+        MOTOR_FRAME_UNDEFINED = 0,
+        MOTOR_FRAME_QUAD = 1,
+        MOTOR_FRAME_HEXA = 2,
+        MOTOR_FRAME_OCTA = 3,
+        MOTOR_FRAME_OCTAQUAD = 4,
+        MOTOR_FRAME_Y6 = 5,
+        MOTOR_FRAME_HELI = 6,
+        MOTOR_FRAME_TRI = 7,
+        MOTOR_FRAME_SINGLE = 8,
+        MOTOR_FRAME_COAX = 9
+    };
+    enum motor_frame_type {
+        MOTOR_FRAME_PLUS = 0,
+        MOTOR_FRAME_X = 1,
+        MOTOR_FRAME_V = 2,
+        MOTOR_FRAME_H = 3,
+        MOTOR_FRAME_VTAIL = 4,
+        MOTOR_FRAME_ATAIL = 5,
+        MOTOR_FRAME_Y6B = 6,
+        MOTOR_FRAME_QUADPLANE = 7,
+        MOTOR_FRAME_NEW_PLUS = 10
+    };
+
     // Constructor
     AP_Motors(uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT);
 
     // set update rate to motors - a value in hertz
     virtual void        set_update_rate( uint16_t speed_hz ) { _speed_hz = speed_hz; }
 
-    // set frame orientation (normally + or X)
-    virtual void        set_frame_orientation( uint8_t new_orientation ) { _flags.frame_orientation = new_orientation; }
+    // set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
+    virtual void        set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type);
 
     // arm, disarm or check status status of motors
     bool                armed() const { return _flags.armed; }
@@ -163,13 +187,14 @@ protected:
     // flag bitmask
     struct AP_Motors_flags {
         uint8_t armed              : 1;    // 0 if disarmed, 1 if armed
-        uint8_t frame_orientation  : 4;    // PLUS_FRAME 0, X_FRAME 1, V_FRAME 2, H_FRAME 3, NEW_PLUS_FRAME 10, NEW_X_FRAME, NEW_V_FRAME, NEW_H_FRAME
         uint8_t interlock          : 1;    // 1 if the motor interlock is enabled (i.e. motors run), 0 if disabled (motors don't run)
     } _flags;
 
     // internal variables
     uint16_t            _loop_rate;                 // rate in Hz at which output() function is called (normally 400hz)
     uint16_t            _speed_hz;                  // speed in hz to send updates to motors
+    motor_frame_class   _frame_class;               // quad, hexa, octa, etc
+    motor_frame_type    _frame_type;                // plus, x, v, etc
     float               _roll_in;                   // desired roll control from attitude controllers, -1 ~ +1
     float               _pitch_in;                  // desired pitch control from attitude controller, -1 ~ +1
     float               _yaw_in;                    // desired yaw control from attitude controller, -1 ~ +1

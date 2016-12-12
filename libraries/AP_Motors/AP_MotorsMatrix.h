@@ -26,8 +26,8 @@ public:
     // you must have setup_motors before calling this
     void                set_update_rate(uint16_t speed_hz);
 
-    // set frame orientation (normally + or X)
-    void                set_frame_orientation(uint8_t new_orientation);
+    // set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
+    void                set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type);
 
     // enable - starts allowing signals to be sent to motors
     void                enable();
