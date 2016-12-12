@@ -49,11 +49,8 @@ public:
     // remove_motor
     void                remove_motor(int8_t motor_num);
 
-    // remove_all_motors - removes all motor definitions
-    void                remove_all_motors();
-
-    // setup_motors - configures the motors for a given frame type - should be overwritten by child classes
-    virtual void        setup_motors() { remove_all_motors(); };
+    // configures the motors for the defined frame_class and frame_type
+    void                setup_motors();
 
     // get_motor_mask - returns a bitmask of which outputs are being used for motors (1 means being used)
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
