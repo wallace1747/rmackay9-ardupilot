@@ -78,6 +78,11 @@ void AP_MotorsCoax::Init()
     _servo2.set_angle(AP_MOTORS_COAX_SERVO_INPUT_RANGE);
     _servo3.set_angle(AP_MOTORS_COAX_SERVO_INPUT_RANGE);
     _servo4.set_angle(AP_MOTORS_COAX_SERVO_INPUT_RANGE);
+
+// set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
+void AP_MotorsCoax::set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type)
+{
+    _flags.initialised_ok = (frame_class == MOTOR_FRAME_COAX);
 }
 
 // set update rate to motors - a value in hertz
