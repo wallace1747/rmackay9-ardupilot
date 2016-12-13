@@ -22,12 +22,12 @@ public:
     // init
     void                Init();
 
+    // set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
+    void                set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type);
+
     // set update rate to motors - a value in hertz
     // you must have setup_motors before calling this
     void                set_update_rate(uint16_t speed_hz);
-
-    // set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
-    void                set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type);
 
     // enable - starts allowing signals to be sent to motors
     void                enable();
@@ -74,4 +74,6 @@ protected:
     float               _yaw_factor[AP_MOTORS_MAX_NUM_MOTORS];  // each motors contribution to yaw (normally 1 or -1)
     float               _thrust_rpyt_out[AP_MOTORS_MAX_NUM_MOTORS]; // combined roll, pitch, yaw and throttle outputs to motors in 0~1 range
     uint8_t             _test_order[AP_MOTORS_MAX_NUM_MOTORS];  // order of the motors in the test sequence
+    motor_frame_class   _last_frame_class; // most recently requested frame class (i.e. quad, hexa, octa, etc)
+    motor_frame_type    _last_frame_type; // most recently requested frame type (i.e. plus, x, v, etc)
 };
