@@ -31,7 +31,7 @@ public:
     };
 
     // init
-    virtual void        Init();
+    void                init(motor_frame_class frame_class, motor_frame_type frame_type);
 
     // set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
     void                set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type);
