@@ -487,9 +487,10 @@ uint8_t Copter::get_frame_mav_type()
     return MAV_TYPE_GENERIC;
 }
 
+// return string corresponding to frame_class
 const char* Copter::get_frame_string()
 {
-    switch((AP_Motors::motor_frame_class)g2.frame_class.get()) {
+    switch ((AP_Motors::motor_frame_class)g2.frame_class.get()) {
         case AP_Motors::MOTOR_FRAME_QUAD:
             return "QUAD";
         case AP_Motors::MOTOR_FRAME_HEXA:
