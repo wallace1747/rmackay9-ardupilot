@@ -81,6 +81,11 @@ void AP_MotorsSingle::Init()
 
     // allow mapping of motor7
     add_motor_num(CH_7);
+
+// set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
+void AP_MotorsSingle::set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type)
+{
+    _flags.initialised_ok = (frame_class == MOTOR_FRAME_SINGLE);
 }
 
 // set update rate to motors - a value in hertz
