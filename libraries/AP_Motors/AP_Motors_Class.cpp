@@ -55,13 +55,6 @@ AP_Motors::AP_Motors(uint16_t loop_rate, uint16_t speed_hz) :
     limit.throttle_upper = true;
 };
 
-// set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
-void AP_Motors::set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type)
-{
-    _frame_class = frame_class;
-    _frame_type = frame_type;
-}
-
 void AP_Motors::armed(bool arm)
 {
     if (_flags.armed != arm) {
