@@ -18,19 +18,6 @@
 
 #define AP_MOTORS_MAX_NUM_MOTORS 8
 
-// frame definitions
-#define AP_MOTORS_PLUS_FRAME        0
-#define AP_MOTORS_X_FRAME           1
-#define AP_MOTORS_V_FRAME           2
-#define AP_MOTORS_H_FRAME           3   // same as X frame but motors spin in opposite direction
-#define AP_MOTORS_VTAIL_FRAME       4   // Lynxmotion Hunter VTail 400/500
-#define AP_MOTORS_ATAIL_FRAME       5   // A-Shaped VTail Quads
-#define AP_MOTORS_NEW_PLUS_FRAME    10  // NEW frames are same as original 4 but with motor orders changed to be clockwise from the front
-#define AP_MOTORS_NEW_X_FRAME       11
-#define AP_MOTORS_NEW_V_FRAME       12
-#define AP_MOTORS_NEW_H_FRAME       13   // same as X frame but motors spin in opposite direction
-#define AP_MOTORS_QUADPLANE         14   // motors on 5..8
-
 // motor update rate
 #define AP_MOTORS_SPEED_DEFAULT     490 // default output rate to the motors
 
@@ -58,18 +45,15 @@ public:
         MOTOR_FRAME_VTAIL = 4,
         MOTOR_FRAME_ATAIL = 5,
         MOTOR_FRAME_Y6B = 6,
-        MOTOR_FRAME_QUADPLANE = 7,
-        MOTOR_FRAME_NEW_PLUS = 10
+        MOTOR_FRAME_NEW_PLUS = 10,
+        MOTOR_FRAME_QUADPLANE = 14,
     };
 
     // Constructor
     AP_Motors(uint16_t loop_rate, uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT);
 
-    // set update rate to motors - a value in hertz
-    virtual void        set_update_rate( uint16_t speed_hz ) { _speed_hz = speed_hz; }
-
-    // set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
-    virtual void        set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type);
+    // check initialisation succeeded
+    bool                initialised_ok() const { return _flags.initialised_ok; }
 
     // arm, disarm or check status status of motors
     bool                armed() const { return _flags.armed; }
@@ -131,8 +115,14 @@ public:
     // virtual functions that should be implemented by child classes
     //
 
+    // set update rate to motors - a value in hertz
+    virtual void        set_update_rate( uint16_t speed_hz ) { _speed_hz = speed_hz; }
+
     // init
-    virtual void        Init() = 0;
+    virtual void        init(motor_frame_class frame_class, motor_frame_type frame_type) = 0;
+
+    // set frame class (i.e. quad, hexa, heli) and type (i.e. x, plus)
+    virtual void        set_frame_class_and_type(motor_frame_class frame_class, motor_frame_type frame_type) = 0;
 
     // enable - starts allowing signals to be sent to motors
     virtual void        enable() = 0;
@@ -173,7 +163,7 @@ protected:
     void add_motor_num(int8_t motor_num);
     
     // update the throttle input filter
-    virtual void        update_throttle_filter() = 0;
+    virtual void update_throttle_filter() = 0;
 
     // save parameters as part of disarming
     virtual void save_params_on_disarm() {}
@@ -188,13 +178,12 @@ protected:
     struct AP_Motors_flags {
         uint8_t armed              : 1;    // 0 if disarmed, 1 if armed
         uint8_t interlock          : 1;    // 1 if the motor interlock is enabled (i.e. motors run), 0 if disabled (motors don't run)
+        uint8_t initialised_ok     : 1;    // 1 if initialisation was successful
     } _flags;
 
     // internal variables
     uint16_t            _loop_rate;                 // rate in Hz at which output() function is called (normally 400hz)
     uint16_t            _speed_hz;                  // speed in hz to send updates to motors
-    motor_frame_class   _frame_class;               // quad, hexa, octa, etc
-    motor_frame_type    _frame_type;                // plus, x, v, etc
     float               _roll_in;                   // desired roll control from attitude controllers, -1 ~ +1
     float               _pitch_in;                  // desired pitch control from attitude controller, -1 ~ +1
     float               _yaw_in;                    // desired yaw control from attitude controller, -1 ~ +1
