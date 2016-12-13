@@ -460,10 +460,10 @@ bool Copter::should_log(uint32_t mask)
 #endif
 }
 
-// convert FRAME_CLASS to MAV_TYPE
+// return MAV_TYPE corresponding to frame class
 uint8_t Copter::get_frame_mav_type()
 {
-    switch((AP_Motors::motor_frame_class)g2.frame_class.get()) {
+    switch ((AP_Motors::motor_frame_class)g2.frame_class.get()) {
         case AP_Motors::MOTOR_FRAME_QUAD:
             return MAV_TYPE_QUADROTOR;
         case AP_Motors::MOTOR_FRAME_HEXA:
