@@ -378,6 +378,7 @@ bool QuadPlane::setup(void)
     RC_Channel_aux::set_aux_channel_default(RC_Channel_aux::k_motor2, CH_6);
     RC_Channel_aux::set_aux_channel_default(RC_Channel_aux::k_motor4, CH_8);
     RC_Channel_aux::set_aux_channel_default(RC_Channel_aux::k_motor7, CH_11);
+    frame_class = AP_Motors::MOTOR_FRAME_TRI;
     motors = new AP_MOTORS_CLASS(plane.scheduler.get_loop_rate_hz());
 #else
     /*
