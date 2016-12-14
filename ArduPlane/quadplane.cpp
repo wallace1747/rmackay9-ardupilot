@@ -208,14 +208,12 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @Increment: 1
     AP_GROUPINFO("TRAN_PIT_MAX", 29, QuadPlane, transition_pitch_max, 3),
 
-#if FRAME_CONFIG == MULTICOPTER_FRAME
     // @Param: FRAME_CLASS
     // @DisplayName: Frame Class
     // @Description: Controls major frame class for multicopter component
     // @Values: 0:Undefined, 1:Quad, 2:Hexa, 3:Octa, 4:OctaQuad, 5:Y6, 7:Tri
     // @User: Standard
     AP_GROUPINFO("FRAME_CLASS", 30, QuadPlane, frame_class, 1),
-#endif
 
     // @Param: FRAME_TYPE
     // @DisplayName: Frame Type (+, X or V)
