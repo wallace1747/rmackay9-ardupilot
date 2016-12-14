@@ -53,7 +53,6 @@ void Copter::init_rc_in()
 void Copter::init_rc_out()
 {
     motors.set_update_rate(g.rc_speed);
-    motors.set_frame_class_and_type((AP_Motors::motor_frame_class)g2.frame_class.get(), (AP_Motors::motor_frame_type)g.frame_orientation.get());
     motors.set_loop_rate(scheduler.get_loop_rate_hz());
     motors.Init();                                              // motor initialisation
 #if FRAME_CONFIG != HELI_FRAME
