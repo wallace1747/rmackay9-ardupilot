@@ -113,7 +113,7 @@ private:
 
     // returns the maximum positive and negative roll and pitch forces based on the proximity sensor
     //   all values are in the 0 ~ 1 range
-    void get_proximity_roll_pitch_force(float &roll_force_pos, float roll_force_neg, float &pitch_force_pos, float &pitch_force_neg);
+    void get_proximity_roll_pitch_force(float &roll_force_pos, float &roll_force_neg, float &pitch_force_pos, float &pitch_force_neg);
 
     // external references
     const AP_AHRS& _ahrs;

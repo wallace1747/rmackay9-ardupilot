@@ -377,7 +377,7 @@ float AC_Avoid::distance_to_force(float dist_m)
 
 // returns the maximum positive and negative roll and pitch forces based on the proximity sensor
 //   all values are in the 0 ~ 1 range
-void AC_Avoid::get_proximity_roll_pitch_force(float &roll_force_pos, float roll_force_neg, float &pitch_force_pos, float &pitch_force_neg)
+void AC_Avoid::get_proximity_roll_pitch_force(float &roll_force_pos, float &roll_force_neg, float &pitch_force_pos, float &pitch_force_neg)
 {
     // exit immediately if proximity sensor is not present
     if (_proximity.get_status() != AP_Proximity::Proximity_Good) {
@@ -400,20 +400,20 @@ void AC_Avoid::get_proximity_roll_pitch_force(float &roll_force_pos, float roll_
                 float force = distance_to_force(dist_m);
                 // convert to angle and force to roll and pitch force
                 float angle_rad = radians(ang_deg);
-                float roll_force = cosf(angle_rad) * force;
-                float pitch_force = sinf(angle_rad) * force;
+                float roll_force = -sinf(angle_rad) * force;
+                float pitch_force = cosf(angle_rad) * force;
                 // update roll, pitch force maximums
                 if (roll_force > 0.0f) {
                     roll_force_pos = MAX(roll_force_pos, roll_force);
                 }
                 if (roll_force < 0.0f) {
-                    roll_force_pos = MIN(roll_force_neg, roll_force);
+                    roll_force_neg = MIN(roll_force_neg, roll_force);
                 }
                 if (pitch_force > 0.0f) {
                     pitch_force_pos = MAX(pitch_force_pos, pitch_force);
                 }
                 if (pitch_force < 0.0f) {
-                    pitch_force_pos = MIN(pitch_force_neg, pitch_force);
+                    pitch_force_neg = MIN(pitch_force_neg, pitch_force);
                 }
             }
         }
