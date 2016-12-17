@@ -17,13 +17,34 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("ANGLE_MAX", 2,  AC_Avoid, _angle_max, 1000),
 
-    // @Param: NONGPS_
-    // @DisplayName: Avoidance gain for non-GPS flight modes
-    // @Description: Avoidance gain for non-GPS flight modes
+    // @Param: NOGPS_P
+    // @DisplayName: Avoidance P gain for non-GPS flight modes
+    // @Description: Avoidance P gain for non-GPS flight modes
     // @Range: 0 5
     // @Increment: 0.1
     // @User: Advanced
-    AP_SUBGROUPINFO(_nongps_pid, "NONGPS_", 3, AC_Avoid, AC_PI_2D),
+
+    // @Param: NOGPS_I
+    // @DisplayName: Avoidance I gain for non-GPS flight modes
+    // @Description: Avoidance I gain for non-GPS flight modes
+    // @Range: 0 5
+    // @Increment: 0.1
+    // @User: Advanced
+
+    // @Param: NOGPS_IMAX
+    // @DisplayName: Avoidance I gain output maximum for non-GPS flight modes
+    // @Description: Avoidance I gain output maximum  for non-GPS flight modes
+    // @Range: 0 1
+    // @Increment: 0.1
+    // @User: Advanced
+
+    // @Param: NOGPS_FILT
+    // @DisplayName: Avoidance gain for non-GPS flight modes
+    // @Description: Avoidance gain for non-GPS flight modes
+    // @Units: hz
+    // @Increment: 0.11
+    // @User: Advanced
+    AP_SUBGROUPINFO(_nongps_pid, "NOGPS_", 3, AC_Avoid, AC_PI_2D),
 
     AP_GROUPEND
 };
