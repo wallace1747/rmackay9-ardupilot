@@ -20,11 +20,11 @@ const AP_Param::GroupInfo AC_PI_2D::var_info[] = {
     // @Description: The maximum/minimum value that the I term can output
     AP_GROUPINFO("IMAX", 2, AC_PI_2D, _imax, 0),
 
-    // @Param: FILT_HZ
+    // @Param: FILT
     // @DisplayName: PID Input filter frequency in Hz
     // @Description: Input filter frequency in Hz
     // @Units: Hz
-    AP_GROUPINFO("FILT_HZ", 3, AC_PI_2D, _filt_hz, AC_PI_2D_FILT_HZ_DEFAULT),
+    AP_GROUPINFO("FILT", 3, AC_PI_2D, _filt_hz, AC_PI_2D_FILT_HZ_DEFAULT),
 
     AP_GROUPEND
 };
