@@ -8,6 +8,7 @@
 #include <AC_AttitudeControl/AC_AttitudeControl.h> // Attitude controller library for sqrt controller
 #include <AC_Fence/AC_Fence.h>         // Failsafe fence library
 #include <AP_Proximity/AP_Proximity.h>
+#include <AC_PID/AC_PI_2D.h>
 
 #define AC_AVOID_ACCEL_CMSS_MAX         100.0f  // maximum acceleration/deceleration in cm/s/s used to avoid hitting fence
 
@@ -16,6 +17,14 @@
 #define AC_AVOID_STOP_AT_FENCE          1       // stop at fence
 #define AC_AVOID_USE_PROXIMITY_SENSOR   2       // stop based on proximity sensor output
 #define AC_AVOID_ALL                    3       // use fence and promiximity sensor
+
+// dfinitions for non-GPS avoidance
+#define AC_AVOID_NONGPS_DIST_MAX        10.0f   // objects over 10m away are ignored
+#define AC_AVOID_NONGPS_P               1.0f
+#define AC_AVOID_NONGPS_I               1.0f
+#define AC_AVOID_NONGPS_IMAX            1.0f
+#define AC_AVOID_NONGPS_FILT_HZ         1.0f
+#define AC_AVOID_NONGPS_DT              0.02f   // To-Do: pass dt in from main flight code to proximity
 
 /*
  * This class prevents the vehicle from leaving a polygon fence in
@@ -34,6 +43,11 @@ public:
      */
     void adjust_velocity(float kP, float accel_cmss, Vector2f &desired_vel);
     void adjust_velocity(float kP, float accel_cmss, Vector3f &desired_vel);
+
+    // adjust roll-pitch to push vehicle away from objects
+    // roll and pitch value are in centi-degrees
+    // angle_max is the user defined maximum lean angle for the vehicle in centi-degrees
+    void adjust_roll_pitch(float &roll, float &pitch, float angle_max);
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -90,6 +104,17 @@ private:
      */
     float get_margin() const { return _fence.get_margin() * 100.0f; }
 
+    /*
+     * methods for avoidance in non-GPS flight modes
+     */
+
+    // converts distance (in meters) to a force (in 0~1 range) for use in manual flight modes
+    float distance_to_force(float dist_m);
+
+    // returns the maximum positive and negative roll and pitch forces based on the proximity sensor
+    //   all values are in the 0 ~ 1 range
+    void get_proximity_roll_pitch_force(float &roll_force_pos, float roll_force_neg, float &pitch_force_pos, float &pitch_force_neg);
+
     // external references
     const AP_AHRS& _ahrs;
     const AP_InertialNav& _inav;
@@ -98,4 +123,9 @@ private:
 
     // parameters
     AP_Int8 _enabled;
+    AP_Int16 _angle_max;    // maximum lean angle to avoid obstacles (only used in non-GPS flight modes)
+    AC_PI_2D _nongps_pid;   // pi controller used in non-GPS flight modes
+
+    // internal variables
+    bool _nongps_angle_limit = false;   // true if non-GPS avoidance control hits an angular limit - used to protect against I term buildup
 };

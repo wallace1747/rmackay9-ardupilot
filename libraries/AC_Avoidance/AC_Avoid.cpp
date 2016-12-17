@@ -10,6 +10,21 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("ENABLE", 1,  AC_Avoid, _enabled, AC_AVOID_ALL),
 
+    // @Param: ANGLE MAX
+    // @DisplayName: Avoidance max lean angle in non-GPS flight modes
+    // @Description: Max lean angle used to avoid obstacles while in non-GPS modes
+    // @Range: 0 4500
+    // @User: Standard
+    AP_GROUPINFO("ANGLE_MAX", 2,  AC_Avoid, _angle_max, 1000),
+
+    // @Param: NONGPS_
+    // @DisplayName: Avoidance gain for non-GPS flight modes
+    // @Description: Avoidance gain for non-GPS flight modes
+    // @Range: 0 5
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_SUBGROUPINFO(_nongps_pid, "NONGPS_", 3, AC_Avoid, AC_PI_2D),
+
     AP_GROUPEND
 };
 
@@ -18,7 +33,8 @@ AC_Avoid::AC_Avoid(const AP_AHRS& ahrs, const AP_InertialNav& inav, const AC_Fen
     : _ahrs(ahrs),
       _inav(inav),
       _fence(fence),
-      _proximity(proximity)
+      _proximity(proximity),
+      _nongps_pid(AC_AVOID_NONGPS_P, AC_AVOID_NONGPS_I, AC_AVOID_NONGPS_IMAX, AC_AVOID_NONGPS_FILT_HZ, AC_AVOID_NONGPS_DT)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -50,6 +66,67 @@ void AC_Avoid::adjust_velocity(float kP, float accel_cmss, Vector3f &desired_vel
     adjust_velocity(kP, accel_cmss, des_vel_xy);
     desired_vel.x = des_vel_xy.x;
     desired_vel.y = des_vel_xy.y;
+}
+
+// adjust roll-pitch to push vehicle away from objects
+// roll and pitch value are in centi-degrees
+void AC_Avoid::adjust_roll_pitch(float &roll, float &pitch, float angle_max)
+{
+    // exit immediately if angle max is zero
+    if (_angle_max <= 0.0f || angle_max <= 0.0f) {
+        return;
+    }
+
+    float roll_force_pos = 0.0f;    // maximum positive roll force
+    float roll_force_neg = 0.0f;    // minimum negative roll force
+    float pitch_force_pos = 0.0f;   // maximum position pitch force
+    float pitch_force_neg = 0.0f;   // minimum negative pitch force
+
+    // get maximum positive and negative roll and pitch forces from all sources
+    get_proximity_roll_pitch_force(roll_force_pos, roll_force_neg, pitch_force_pos, pitch_force_neg);
+
+    // create final vector
+    Vector2f rp_force(roll_force_pos + roll_force_neg, pitch_force_pos + pitch_force_neg);
+
+    // pass through 2D PID controller to convert to lean angle
+    _nongps_pid.set_input(rp_force);
+
+    // get p
+    Vector2f rp_out = _nongps_pid.get_p();
+
+    // add i term to output (note: we update i term if we have not hit the angular limits on the previous iteration)
+    if (!_nongps_angle_limit) {
+        rp_out += _nongps_pid.get_i();
+    } else {
+        rp_out += _nongps_pid.get_i_shrink();
+    }
+
+    // convert to lean angle in centi-degrees
+    rp_out *= 4500.0f;
+
+    // apply avoidance angular limits
+    float vec_len = rp_out.length();
+    if (vec_len > _angle_max) {
+        rp_out *= (_angle_max / vec_len);
+        _nongps_angle_limit = true;
+    } else {
+        _nongps_angle_limit = false;
+    }
+
+    // add passed in roll, pitch angles
+    rp_out.x += roll;
+    rp_out.y += pitch;
+
+    // apply total angular limits
+    vec_len = rp_out.length();
+    if (vec_len > angle_max) {
+        vec_len = vec_len * (angle_max / vec_len);
+        _nongps_angle_limit = true;
+    }
+
+    // return adjusted roll, pitch
+    roll = rp_out.x;
+    pitch = rp_out.y;
 }
 
 /*
@@ -262,5 +339,62 @@ float AC_Avoid::get_stopping_distance(float kP, float accel_cmss, float speed) c
     } else {
         // accel_cmss/(2.0f*kP*kP) is the distance at which we switch from linear to sqrt response
         return accel_cmss/(2.0f*kP*kP) + (speed*speed)/(2.0f*accel_cmss);
+    }
+}
+
+// converts distance (in meters) to a force (in 0~1 range) for use in manual flight modes
+float AC_Avoid::distance_to_force(float dist_m)
+{
+    if (dist_m <= 0.0f || dist_m > 10.0f) {
+        return 0.0f;
+    }
+    if (dist_m <= 1.0f) {
+        return 1.0f;
+    }
+    return 1.0f/dist_m;
+}
+
+// returns the maximum positive and negative roll and pitch forces based on the proximity sensor
+//   all values are in the 0 ~ 1 range
+void AC_Avoid::get_proximity_roll_pitch_force(float &roll_force_pos, float roll_force_neg, float &pitch_force_pos, float &pitch_force_neg)
+{
+    // exit immediately if proximity sensor is not present
+    if (_proximity.get_status() != AP_Proximity::Proximity_Good) {
+        return;
+    }
+
+    uint8_t obj_count = _proximity.get_object_count();
+
+    // if no objects return
+    if (obj_count == 0) {
+        return;
+    }
+
+    // calculate maximum roll, pitch force from objects
+    for (uint8_t i=0; i<obj_count; i++) {
+        float ang_deg, dist_m;
+        if (_proximity.get_object_angle_and_distance(i, ang_deg, dist_m)) {
+            if (dist_m < AC_AVOID_NONGPS_DIST_MAX) {
+                // convert distance to force
+                float force = distance_to_force(dist_m);
+                // convert to angle and force to roll and pitch force
+                float angle_rad = radians(ang_deg);
+                float roll_force = cosf(angle_rad) * force;
+                float pitch_force = sinf(angle_rad) * force;
+                // update roll, pitch force maximums
+                if (roll_force > 0.0f) {
+                    roll_force_pos = MAX(roll_force_pos, roll_force);
+                }
+                if (roll_force < 0.0f) {
+                    roll_force_pos = MIN(roll_force_neg, roll_force);
+                }
+                if (pitch_force > 0.0f) {
+                    pitch_force_pos = MAX(pitch_force_pos, pitch_force);
+                }
+                if (pitch_force < 0.0f) {
+                    pitch_force_pos = MIN(pitch_force_neg, pitch_force);
+                }
+            }
+        }
     }
 }
