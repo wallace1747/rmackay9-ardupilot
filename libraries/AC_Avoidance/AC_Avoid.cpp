@@ -89,19 +89,19 @@ void AC_Avoid::adjust_roll_pitch(float &roll, float &pitch, float angle_max)
         return;
     }
 
-    float roll_force_pos = 0.0f;    // maximum positive roll force
-    float roll_force_neg = 0.0f;    // minimum negative roll force
-    float pitch_force_pos = 0.0f;   // maximum position pitch force
-    float pitch_force_neg = 0.0f;   // minimum negative pitch force
+    float roll_positive = 0.0f;    // maximum positive roll value
+    float roll_negative = 0.0f;    // minimum negative roll value
+    float pitch_positive = 0.0f;   // maximum position pitch value
+    float pitch_negative = 0.0f;   // minimum negative pitch value
 
-    // get maximum positive and negative roll and pitch forces from all sources
-    get_proximity_roll_pitch_force(roll_force_pos, roll_force_neg, pitch_force_pos, pitch_force_neg);
+    // get maximum positive and negative roll and pitch percentages from proximity sensor
+    get_proximity_roll_pitch_pct(roll_positive, roll_negative, pitch_positive, pitch_negative);
 
-    // create final vector
-    Vector2f rp_force(roll_force_pos + roll_force_neg, pitch_force_pos + pitch_force_neg);
+    // add maximum positive and negative percentages together for roll and pitch
+    Vector2f rp_pct(roll_positive + roll_negative, pitch_positive + pitch_negative);
 
     // get p and convert to centi-degrees
-    Vector2f rp_out = rp_force * _nongps_p_gain * 4500.0f;
+    Vector2f rp_out = rp_pct * _nongps_p_gain * 4500.0f;
 
     // apply avoidance angular limits
     // the object avoidance lean angle is never more than 75% of the total angle-limit to allow the pilot to override
@@ -339,8 +339,8 @@ float AC_Avoid::get_stopping_distance(float kP, float accel_cmss, float speed) c
     }
 }
 
-// converts distance (in meters) to a force (in 0~1 range) for use in manual flight modes
-float AC_Avoid::distance_to_force(float dist_m)
+// convert distance (in meters) to a lean percentage (in 0~1 range) for use in manual flight modes
+float AC_Avoid::distance_to_lean_pct(float dist_m)
 {
     // ignore objects beyond DIST_MAX
     if (dist_m <= 0.0f || dist_m >= _dist_max || _dist_max <= 0.0f) {
@@ -354,9 +354,8 @@ float AC_Avoid::distance_to_force(float dist_m)
     return 1.0f - (dist_m / _dist_max);
 }
 
-// returns the maximum positive and negative roll and pitch forces based on the proximity sensor
-//   all values are in the 0 ~ 1 range
-void AC_Avoid::get_proximity_roll_pitch_force(float &roll_force_pos, float &roll_force_neg, float &pitch_force_pos, float &pitch_force_neg)
+// returns the maximum positive and negative roll and pitch percentages (in -1 ~ +1 range) based on the proximity sensor
+void AC_Avoid::get_proximity_roll_pitch_pct(float &roll_positive, float &roll_negative, float &pitch_positive, float &pitch_negative)
 {
     // exit immediately if proximity sensor is not present
     if (_proximity.get_status() != AP_Proximity::Proximity_Good) {
@@ -370,29 +369,29 @@ void AC_Avoid::get_proximity_roll_pitch_force(float &roll_force_pos, float &roll
         return;
     }
 
-    // calculate maximum roll, pitch force from objects
+    // calculate maximum roll, pitch values from objects
     for (uint8_t i=0; i<obj_count; i++) {
         float ang_deg, dist_m;
         if (_proximity.get_object_angle_and_distance(i, ang_deg, dist_m)) {
             if (dist_m < _dist_max) {
-                // convert distance to force
-                float force = distance_to_force(dist_m);
-                // convert to angle and force to roll and pitch force
+                // convert distance to lean angle (in 0 to 1 range)
+                float lean_pct = distance_to_lean_pct(dist_m);
+                // convert angle to roll and pitch lean percentages
                 float angle_rad = radians(ang_deg);
-                float roll_force = -sinf(angle_rad) * force;
-                float pitch_force = cosf(angle_rad) * force;
-                // update roll, pitch force maximums
-                if (roll_force > 0.0f) {
-                    roll_force_pos = MAX(roll_force_pos, roll_force);
+                float roll_pct = -sinf(angle_rad) * lean_pct;
+                float pitch_pct = cosf(angle_rad) * lean_pct;
+                // update roll, pitch maximums
+                if (roll_pct > 0.0f) {
+                    roll_positive = MAX(roll_positive, roll_pct);
                 }
-                if (roll_force < 0.0f) {
-                    roll_force_neg = MIN(roll_force_neg, roll_force);
+                if (roll_pct < 0.0f) {
+                    roll_negative = MIN(roll_negative, roll_pct);
                 }
-                if (pitch_force > 0.0f) {
-                    pitch_force_pos = MAX(pitch_force_pos, pitch_force);
+                if (pitch_pct > 0.0f) {
+                    pitch_positive = MAX(pitch_positive, pitch_pct);
                 }
-                if (pitch_force < 0.0f) {
-                    pitch_force_neg = MIN(pitch_force_neg, pitch_force);
+                if (pitch_pct < 0.0f) {
+                    pitch_negative = MIN(pitch_negative, pitch_pct);
                 }
             }
         }

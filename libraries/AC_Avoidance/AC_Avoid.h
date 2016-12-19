@@ -107,12 +107,11 @@ private:
      * methods for avoidance in non-GPS flight modes
      */
 
-    // converts distance (in meters) to a force (in 0~1 range) for use in manual flight modes
-    float distance_to_force(float dist_m);
+    // convert distance (in meters) to a lean percentage (in 0~1 range) for use in manual flight modes
+    float distance_to_lean_pct(float dist_m);
 
-    // returns the maximum positive and negative roll and pitch forces based on the proximity sensor
-    //   all values are in the 0 ~ 1 range
-    void get_proximity_roll_pitch_force(float &roll_force_pos, float &roll_force_neg, float &pitch_force_pos, float &pitch_force_neg);
+    // returns the maximum positive and negative roll and pitch percentages (in -1 ~ +1 range) based on the proximity sensor
+    void get_proximity_roll_pitch_pct(float &roll_positive, float &roll_negative, float &pitch_positive, float &pitch_negative);
 
     // external references
     const AP_AHRS& _ahrs;
