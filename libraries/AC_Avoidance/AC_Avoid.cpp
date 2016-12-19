@@ -141,7 +141,7 @@ void AC_Avoid::adjust_roll_pitch(float &roll, float &pitch, float angle_max)
     // apply total angular limits
     vec_len = rp_out.length();
     if (vec_len > angle_max) {
-        vec_len = vec_len * (angle_max / vec_len);
+        rp_out *= (angle_max / vec_len);
         _nongps_angle_limit = true;
     }
 
