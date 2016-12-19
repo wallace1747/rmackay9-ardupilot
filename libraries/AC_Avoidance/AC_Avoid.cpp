@@ -61,7 +61,7 @@ void AC_Avoid::adjust_velocity(float kP, float accel_cmss, Vector2f &desired_vel
         adjust_velocity_polygon_fence(kP, accel_cmss_limited, desired_vel);
     }
 
-    if ((_enabled & AC_AVOID_USE_PROXIMITY_SENSOR) > 0) {
+    if ((_enabled & AC_AVOID_USE_PROXIMITY_SENSOR) > 0 && _proximity_enabled) {
         adjust_velocity_proximity(kP, accel_cmss_limited, desired_vel);
     }
 }
@@ -79,6 +79,11 @@ void AC_Avoid::adjust_velocity(float kP, float accel_cmss, Vector3f &desired_vel
 // roll and pitch value are in centi-degrees
 void AC_Avoid::adjust_roll_pitch(float &roll, float &pitch, float angle_max)
 {
+    // exit immediately if proximity based avoidance is disabled
+    if ((_enabled & AC_AVOID_USE_PROXIMITY_SENSOR) == 0 || !_proximity_enabled) {
+        return;
+    }
+
     // exit immediately if angle max is zero
     if (_angle_max <= 0.0f || angle_max <= 0.0f) {
         return;

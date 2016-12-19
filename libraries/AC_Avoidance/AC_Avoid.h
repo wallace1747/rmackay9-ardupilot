@@ -45,6 +45,9 @@ public:
     // angle_max is the user defined maximum lean angle for the vehicle in centi-degrees
     void adjust_roll_pitch(float &roll, float &pitch, float angle_max);
 
+    // enable/disable proximity based avoidance
+    void proximity_avoidance_enable(bool on_off) { _proximity_enabled = on_off; }
+
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
@@ -122,4 +125,6 @@ private:
     AP_Int16 _angle_max;        // maximum lean angle to avoid obstacles (only used in non-GPS flight modes)
     AP_Float _dist_max;         // distance (in meters) from object at which obstacle avoidance will begin in non-GPS modes
     AP_Float _nongps_p_gain;    // p gain used in non-GPS flight modes
+
+    bool _proximity_enabled = true; // true if proximity sensor based avoidance is enabled (used to allow pilot to enable/disable)
 };
