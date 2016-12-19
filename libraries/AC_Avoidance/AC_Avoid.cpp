@@ -23,28 +23,7 @@ const AP_Param::GroupInfo AC_Avoid::var_info[] = {
     // @Range: 0 5
     // @Increment: 0.1
     // @User: Advanced
-
-    // @Param: NOGPS_I
-    // @DisplayName: Avoidance I gain for non-GPS flight modes
-    // @Description: Avoidance I gain for non-GPS flight modes
-    // @Range: 0 5
-    // @Increment: 0.1
-    // @User: Advanced
-
-    // @Param: NOGPS_IMAX
-    // @DisplayName: Avoidance I gain output maximum for non-GPS flight modes
-    // @Description: Avoidance I gain output maximum  for non-GPS flight modes
-    // @Range: 0 1
-    // @Increment: 0.1
-    // @User: Advanced
-
-    // @Param: NOGPS_FILT
-    // @DisplayName: Avoidance gain for non-GPS flight modes
-    // @Description: Avoidance gain for non-GPS flight modes
-    // @Units: hz
-    // @Increment: 0.11
-    // @User: Advanced
-    AP_SUBGROUPINFO(_nongps_pid, "NOGPS_", 3, AC_Avoid, AC_PI_2D),
+    AP_GROUPINFO("NOGPS_P", 3, AC_Avoid, _nongps_p_gain, 1.0f),
 
     AP_GROUPEND
 };
@@ -54,8 +33,7 @@ AC_Avoid::AC_Avoid(const AP_AHRS& ahrs, const AP_InertialNav& inav, const AC_Fen
     : _ahrs(ahrs),
       _inav(inav),
       _fence(fence),
-      _proximity(proximity),
-      _nongps_pid(AC_AVOID_NONGPS_P, AC_AVOID_NONGPS_I, AC_AVOID_NONGPS_IMAX, AC_AVOID_NONGPS_FILT_HZ, AC_AVOID_NONGPS_DT)
+      _proximity(proximity)
 {
     AP_Param::setup_object_defaults(this, var_info);
 }
@@ -109,29 +87,13 @@ void AC_Avoid::adjust_roll_pitch(float &roll, float &pitch, float angle_max)
     // create final vector
     Vector2f rp_force(roll_force_pos + roll_force_neg, pitch_force_pos + pitch_force_neg);
 
-    // pass through 2D PID controller to convert to lean angle
-    _nongps_pid.set_input(rp_force);
-
-    // get p
-    Vector2f rp_out = _nongps_pid.get_p();
-
-    // add i term to output (note: we update i term if we have not hit the angular limits on the previous iteration)
-    if (!_nongps_angle_limit) {
-        rp_out += _nongps_pid.get_i();
-    } else {
-        rp_out += _nongps_pid.get_i_shrink();
-    }
-
-    // convert to lean angle in centi-degrees
-    rp_out *= 4500.0f;
+    // get p and convert to centi-degrees
+    Vector2f rp_out = rp_force * _nongps_p_gain * 4500.0f;
 
     // apply avoidance angular limits
     float vec_len = rp_out.length();
     if (vec_len > _angle_max) {
         rp_out *= (_angle_max / vec_len);
-        _nongps_angle_limit = true;
-    } else {
-        _nongps_angle_limit = false;
     }
 
     // add passed in roll, pitch angles
@@ -142,7 +104,6 @@ void AC_Avoid::adjust_roll_pitch(float &roll, float &pitch, float angle_max)
     vec_len = rp_out.length();
     if (vec_len > angle_max) {
         rp_out *= (angle_max / vec_len);
-        _nongps_angle_limit = true;
     }
 
     // return adjusted roll, pitch
