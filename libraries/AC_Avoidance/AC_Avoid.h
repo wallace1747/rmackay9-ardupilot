@@ -17,9 +17,10 @@
 #define AC_AVOID_USE_PROXIMITY_SENSOR   2       // stop based on proximity sensor output
 #define AC_AVOID_ALL                    3       // use fence and promiximity sensor
 
-// dfinitions for non-GPS avoidance
-#define AC_AVOID_NONGPS_DIST_MAX        10.0f   // objects over 10m away are ignored
-#define AC_AVOID_NONGPS_P               1.0f
+// definitions for non-GPS avoidance
+#define AC_AVOID_NONGPS_DIST_MAX_DEFAULT    10.0f   // objects over 10m away are ignored (default value for DIST_MAX parameter)
+#define AC_AVOID_ANGLE_MAX_PERCENT          0.75f   // object avoidance max lean angle as a percentage (expressed in 0 ~ 1 range) of total vehicle max lean angle
+#define AC_AVOID_NONGPS_P                   1.0f    // p gain used in conversion from distance to lean angle
 
 /*
  * This class prevents the vehicle from leaving a polygon fence in
@@ -119,5 +120,6 @@ private:
     // parameters
     AP_Int8 _enabled;
     AP_Int16 _angle_max;        // maximum lean angle to avoid obstacles (only used in non-GPS flight modes)
+    AP_Float _dist_max;         // distance (in meters) from object at which obstacle avoidance will begin in non-GPS modes
     AP_Float _nongps_p_gain;    // p gain used in non-GPS flight modes
 };
